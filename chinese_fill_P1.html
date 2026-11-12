@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小學一年級中文供詞填充大挑戰</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti for winning celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;800&display=swap');
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .blank-slot {
+      min-width: 96px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 3px solid #3b82f6;
+      background-color: #eff6ff;
+      border-radius: 8px 8px 0 0;
+      margin: 0 6px;
+      padding: 0 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 700;
+      color: #1e3a8a;
+      vertical-align: middle;
+    }
+    .blank-slot:hover {
+      background-color: #dbeafe;
+    }
+    .blank-slot.active {
+      background-color: #fef08a;
+      border-bottom-color: #eab308;
+      box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.4);
+    }
+    .blank-slot.correct {
+      background-color: #dcfce7;
+      border-bottom-color: #22c55e;
+      color: #15803d;
+    }
+    .blank-slot.incorrect {
+      background-color: #fee2e2;
+      border-bottom-color: #ef4444;
+      color: #b91c1c;
+      animation: shake 0.3s;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+    .word-chip {
+      touch-action: manipulation;
+      transition: all 0.15s ease-in-out;
+    }
+    .word-chip:active {
+      transform: scale(0.95);
+    }
+    .word-chip.used {
+      opacity: 0.35;
+      background-color: #94a3b8 !important;
+      cursor: not-allowed;
+      border-color: #64748b !important;
+      box-shadow: none !important;
+    }
+  </style>
+</head>
+<body class="bg-amber-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+  <!-- Header Section -->
+  <header class="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg py-4 px-6 sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">✏️</span>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black tracking-wide">小學中文 · 5字5題供詞填充挑戰</h1>
+          <p class="text-xs md:text-sm text-cyan-100">每組 5 個生詞配 5 題填充，點擊詞語即可作答</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="level-select-btn" onclick="toggleLevelModal()" class="bg-white/20 hover:bg-white/30 text-white font-bold px-3 py-1.5 rounded-full text-sm backdrop-blur-sm border border-white/40 flex items-center gap-2 transition">
+          <i class="fa-solid fa-list-ol"></i> <span id="current-level-title">第 1 組</span> <i class="fa-solid fa-chevron-down text-xs"></i>
+        </button>
+        <button onclick="resetCurrentLevel()" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold px-3 py-1.5 rounded-full text-sm shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-right"></i> 重玩
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Level Selection Modal -->
+  <div id="level-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+      <div class="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-between items-center">
+        <h3 class="font-bold text-lg flex items-center gap-2"><i class="fa-solid fa-book-open"></i> 選擇練習組別 (共 <span id="total-groups-count">19</span> 組)</h3>
+        <button onclick="toggleLevelModal()" class="text-white/80 hover:text-white text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-5 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3" id="level-grid-buttons">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Message -->
+  <div id="toast-message" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-800 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-semibold flex items-center gap-2 transition-all">
+    <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400"></i>
+    <span id="toast-text">提示文字</span>
+  </div>
+
+  <!-- Main Game Container -->
+  <main class="max-w-3xl w-full mx-auto p-4 md:p-6 flex-grow flex flex-col gap-5">
+    
+    <!-- Status & Score Bar -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-amber-200/80 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="bg-blue-100 text-blue-800 text-xs md:text-sm font-extrabold px-3 py-1 rounded-full uppercase" id="badge-level">第 1 組 / 19</span>
+        <span class="text-slate-500 text-sm font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200">5 字配 5 題</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-sm font-semibold text-slate-600">
+          完成進度: <span id="progress-text" class="text-blue-600 font-bold">0 / 5</span>
+        </div>
+        <div class="w-32 bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+          <div id="progress-bar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Word Bank (5 個生詞) -->
+    <div class="bg-white/95 backdrop-blur rounded-2xl p-5 shadow-md border-2 border-amber-300">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-amber-800 font-black text-sm md:text-base flex items-center gap-2">
+          <i class="fa-solid fa-shapes text-amber-500"></i> 【本頁 5 個生詞】點選填入空格：
+        </span>
+        <span class="text-xs text-slate-400">點擊已填空格可取消</span>
+      </div>
+      <div id="word-bank" class="flex flex-wrap gap-3 items-center justify-center min-h-[56px] p-2 bg-amber-50/70 rounded-xl border border-amber-100">
+        <!-- 5 Word buttons injected here -->
+      </div>
+    </div>
+
+    <!-- Questions Container (5 題填充) -->
+    <div class="bg-white rounded-2xl p-5 md:p-7 shadow-md border border-slate-200 flex-grow">
+      <div id="questions-list" class="space-y-5 text-slate-800 text-lg md:text-xl leading-relaxed">
+        <!-- 5 Sentences injected here -->
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-3 items-center justify-between mt-1">
+      <button id="prev-btn" onclick="prevLevel()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-5 py-2.5 rounded-xl transition flex items-center gap-2">
+        <i class="fa-solid fa-arrow-left"></i> 上一組
+      </button>
+
+      <div class="flex gap-3">
+        <button id="check-btn" onclick="checkAnswers()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-500/30 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+          <i class="fa-solid fa-circle-check"></i> 核對答案
+        </button>
+        <button id="next-btn" onclick="nextLevel()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+          下一組 <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Celebration Popup / Modal -->
+  <div id="success-dialog" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl transform transition-all scale-95 border-4 border-yellow-300">
+      <div class="text-5xl mb-3 animate-bounce">🌟</div>
+      <h2 class="text-2xl font-black text-slate-800 mb-2">太棒了！5 題全對！</h2>
+      <p class="text-slate-600 mb-6 text-sm" id="success-message-text">你順利掌握了這 5 個生詞！</p>
+      <div class="flex flex-col gap-2.5">
+        <button onclick="nextLevel()" class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition">
+          挑戰下一組 🚀
+        </button>
+        <button onclick="closeSuccessDialog()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl transition">
+          留在本頁複習
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center py-4 text-xs text-slate-400">
+    教材整理：小學一年級中文《供詞填充》標準 5 詞配 5 題組別
+  </footer>
+
+  <script>
+    // 嚴格依照「5 個生詞配 5 題填充」所重新規劃編排的完整題庫組別
+    const groupsData = [
+      {
+        id: 1,
+        title: "第 1 組",
+        words: ["明亮", "走進", "多麼", "捨不得", "唱歌"],
+        questions: [
+          { prefix: "1. 小芳有一雙又大又", suffix: "的眼睛，十分美麗。", answer: "明亮" },
+          { prefix: "2. 我一", suffix: "公園裏，就看見五顏六色的鮮花，真是開心極了！", answer: "走進" },
+          { prefix: "3. 夏天到了，天氣", suffix: "炎熱，大家都在流汗呢！", answer: "多麼" },
+          { prefix: "4. 這玩具熊陪伴我多年了，真是", suffix: "把它丟掉。", answer: "捨不得" },
+          { prefix: "5. 聯歡會那天，老師和我們一起", suffix: "和玩遊戲。", answer: "唱歌" }
+        ]
+      },
+      {
+        id: 2,
+        title: "第 2 組",
+        words: ["彩虹", "颳風", "問好", "棉花", "菜市場"],
+        questions: [
+          { prefix: "1. 雨過天晴，天邊出現一道", suffix: "。", answer: "彩虹" },
+          { prefix: "2. 今天外面又", suffix: "又下雨，我們不能去公園玩了。", answer: "颳風" },
+          { prefix: "3. 每天早晨，同學們都會向師長", suffix: "。", answer: "問好" },
+          { prefix: "4. 天上雪白的雲朵像", suffix: "。", answer: "棉花" },
+          { prefix: "5. 放學後，媽媽帶妹妹到", suffix: "買菜。", answer: "菜市場" }
+        ]
+      },
+      {
+        id: 3,
+        title: "第 3 組",
+        words: ["高興", "有趣", "獅子", "身旁", "再見"],
+        questions: [
+          { prefix: "1. 弟弟收到爸爸送的禮物，", suffix: "得跳起來。", answer: "高興" },
+          { prefix: "2. 今天，姐姐到圖書館借一些", suffix: "的故事書。", answer: "有趣" },
+          { prefix: "3. 小動物看見兇猛的", suffix: "，立刻逃跑。", answer: "獅子" },
+          { prefix: "4. 小時候，弟弟總愛坐在媽媽的", suffix: "。", answer: "身旁" },
+          { prefix: "5. 下課了，同學們都起立，跟老師說", suffix: "。", answer: "再見" }
+        ]
+      },
+      {
+        id: 4,
+        title: "第 4 組",
+        words: ["乾淨", "落葉", "已經", "可愛", "招手"],
+        questions: [
+          { prefix: "1. 奶奶把我穿了一個星期的運動服洗", suffix: "。", answer: "乾淨" },
+          { prefix: "2. 秋天來了，公園裏的地上鋪滿了", suffix: "。", answer: "落葉" },
+          { prefix: "3. 爸爸下班回家時，我", suffix: "做完了功課。", answer: "已經" },
+          { prefix: "4. 熊貓長得胖乎乎的，樣子很", suffix: "。", answer: "可愛" },
+          { prefix: "5. 我向妹妹一", suffix: "，她就跑過來了。", answer: "招手" }
+        ]
+      },
+      {
+        id: 5,
+        title: "第 5 組",
+        words: ["玩耍", "慢", "畫", "打掃", "快活"],
+        questions: [
+          { prefix: "1. 星期天，媽媽帶我和弟弟到遊樂場", suffix: "。", answer: "玩耍" },
+          { prefix: "2. 爺爺走路很", suffix: "，我們要停下來等他。", answer: "慢" },
+          { prefix: "3. 我", suffix: "了一張心意卡送給媽媽。", answer: "畫" },
+          { prefix: "4. 姐姐每天都會", suffix: "自己的房間。", answer: "打掃" },
+          { prefix: "5. 小息時，同學們在操場上", suffix: "地玩耍。", answer: "快活" }
+        ]
+      },
+      {
+        id: 6,
+        title: "第 6 組",
+        words: ["驚喜", "悄悄", "天空", "操場", "生日"],
+        questions: [
+          { prefix: "1. 我在生日會上收到很多禮物，真令人", suffix: "呢！", answer: "驚喜" },
+          { prefix: "2. 晚上，小偷", suffix: "地走進那房子裏偷東西。", answer: "悄悄" },
+          { prefix: "3. 小鳥在", suffix: "中飛來飛去。", answer: "天空" },
+          { prefix: "4. 同學們在", suffix: "上體育課。", answer: "操場" },
+          { prefix: "5. 今天是我六歲的", suffix: "。", answer: "生日" }
+        ]
+      },
+      {
+        id: 7,
+        title: "第 7 組",
+        words: ["告訴", "紙", "郊外", "夏天", "回答"],
+        questions: [
+          { prefix: "1. 老師", suffix: "我們星期三是便服日。", answer: "告訴" },
+          { prefix: "2. 妹妹在", suffix: "上畫了一幅美麗的圖畫。", answer: "紙" },
+          { prefix: "3. ", suffix: "有很多樹木，所以空氣特別清新。", answer: "郊外" },
+          { prefix: "4. 每年", suffix: "，爸媽都會帶我到海灘遊玩。", answer: "夏天" },
+          { prefix: "5. 上課時，我們要多主動", suffix: "老師的問題。", answer: "回答" }
+        ]
+      },
+      {
+        id: 8,
+        title: "第 8 組",
+        words: ["到處", "一些", "長", "拍手", "形狀"],
+        questions: [
+          { prefix: "1. 活潑的小狗在草地上", suffix: "跑，十分高興。", answer: "到處" },
+          { prefix: "2. 新年到了，媽媽買了", suffix: "糖果放在糖果盤裏。", answer: "一些" },
+          { prefix: "3. 暑假過後，同學們都", suffix: "高了不少。", answer: "長" },
+          { prefix: "4. 魔術表演很精彩，觀眾們都", suffix: "歡呼。", answer: "拍手" },
+          { prefix: "5. 白雲的", suffix: "千變萬化，有時像小貓，有時像小狗。", answer: "形狀" }
+        ]
+      },
+      {
+        id: 9,
+        title: "第 9 組",
+        words: ["變成", "回應", "奇怪", "發現", "樹葉"],
+        questions: [
+          { prefix: "1. 黃昏時分，蔚藍的天空漸漸", suffix: "金黃色。", answer: "變成" },
+          { prefix: "2. 每次我對小貓說話時，牠都會喵喵叫，給我", suffix: "。", answer: "回應" },
+          { prefix: "3. 自私的妹妹今天竟然和我分享食物，真", suffix: "啊！", answer: "奇怪" },
+          { prefix: "4. 上學途中，姐姐", suffix: "自己忘記拿書包。", answer: "發現" },
+          { prefix: "5. 春天來了，樹上長出了綠色的", suffix: "。", answer: "樹葉" }
+        ]
+      },
+      {
+        id: 10,
+        title: "第 10 組",
+        words: ["活潑", "叫醒", "陽光", "山坡", "跳舞"],
+        questions: [
+          { prefix: "1. 弟弟非常", suffix: "，常常在家裏跑來跑去。", answer: "活潑" },
+          { prefix: "2. 爸爸每天一起床，就會", suffix: "我。", answer: "叫醒" },
+          { prefix: "3. 天亮了，", suffix: "照亮了大地。", answer: "陽光" },
+          { prefix: "4. 爬上這", suffix: "，很快就可以到達山頂。", answer: "山坡" },
+          { prefix: "5. 今天上體育課時，老師教我們跟着音樂", suffix: "。", answer: "跳舞" }
+        ]
+      },
+      {
+        id: 11,
+        title: "第 11 組",
+        words: ["感冒", "知錯", "醒", "大雨", "喜歡"],
+        questions: [
+          { prefix: "1. 爸爸今天", suffix: "，所以留在家裏休息，沒有上班。", answer: "感冒" },
+          { prefix: "2. 我", suffix: "了，所以向媽媽說對不起。", answer: "知錯" },
+          { prefix: "3. 妹妹一早", suffix: "來，找不到媽媽，便大哭起來。", answer: "醒" },
+          { prefix: "4. 快下", suffix: "了！我們趕快回家吧！", answer: "大雨" },
+          { prefix: "5. 我最", suffix: "和媽媽一起做手工。", answer: "喜歡" }
+        ]
+      },
+      {
+        id: 12,
+        title: "第 12 組",
+        words: ["不敢", "天氣", "入神", "寒冷", "說話"],
+        questions: [
+          { prefix: "1. 在圖書館裏，我", suffix: "大聲說話。", answer: "不敢" },
+          { prefix: "2. 今天", suffix: "很好，我和家人到海灘游泳。", answer: "天氣" },
+          { prefix: "3. 爸爸看報紙看得很", suffix: "，聽不到我叫他。", answer: "入神" },
+          { prefix: "4. 今天的氣溫很低，大家都覺得十分", suffix: "。", answer: "寒冷" },
+          { prefix: "5. 他", suffix: "的聲音太小了，我聽不清他說甚麼。", answer: "說話" }
+        ]
+      },
+      {
+        id: 13,
+        title: "第 13 組",
+        words: ["風景", "逃走", "功課", "只有", "哭"],
+        questions: [
+          { prefix: "1. 我們到太平山頂看", suffix: "。", answer: "風景" },
+          { prefix: "2. 小老鼠一見到大花貓，就嚇得馬上", suffix: "啦！", answer: "逃走" },
+          { prefix: "3. 每天放學回家後，我都會馬上做", suffix: "。", answer: "功課" },
+          { prefix: "4. 同學都去玩耍了，", suffix: "我在課室看書。", answer: "只有" },
+          { prefix: "5. 妹妹跌倒受傷，便大", suffix: "起來。", answer: "哭" }
+        ]
+      },
+      {
+        id: 14,
+        title: "第 14 組",
+        words: ["等", "寫", "許多", "起牀", "枝頭"],
+        questions: [
+          { prefix: "1. 放學時，我站在操場", suffix: "家人來接我。", answer: "等" },
+          { prefix: "2. 上中文課時，我跟着老師學", suffix: "字。", answer: "寫" },
+          { prefix: "3. 沙灘上有", suffix: "細小的沙粒。", answer: "許多" },
+          { prefix: "4. 每天", suffix: "後，媽媽都會為我煮早餐。", answer: "起牀" },
+          { prefix: "5. 一打開窗戶，我就看見小鳥站在", suffix: "上歌唱。", answer: "枝頭" }
+        ]
+      },
+      {
+        id: 15,
+        title: "第 15 組",
+        words: ["遊玩", "散步", "老師", "褲子", "動作"],
+        questions: [
+          { prefix: "1. 星期日，美美和晴晴一起到迪士尼樂園", suffix: "。", answer: "遊玩" },
+          { prefix: "2. 晚上，我們一家人沿着海邊一面", suffix: "，一面談天。", answer: "散步" },
+          { prefix: "3. ", suffix: "教導我們要主動向人打招呼，做一個有禮貌的人。", answer: "老師" },
+          { prefix: "4. 夏天到了，媽媽把厚厚的上衣和", suffix: "收到衣櫃裏。", answer: "褲子" },
+          { prefix: "5. 小丑做出很多有趣的", suffix: "。", answer: "動作" }
+        ]
+      },
+      {
+        id: 16,
+        title: "第 16 組",
+        words: ["故事", "介紹", "遊戲", "生病", "豐盛"],
+        questions: [
+          { prefix: "1. 每天晚上，媽媽都會給小弟弟講", suffix: "。", answer: "故事" },
+          { prefix: "2. 今天，老師給我們", suffix: "了一本有趣的圖書。", answer: "介紹" },
+          { prefix: "3. 聖誕聯歡會時，同學們玩了很多集體", suffix: "。", answer: "遊戲" },
+          { prefix: "4. 天氣轉冷了，我們要多穿衣服，不然就會", suffix: "。", answer: "生病" },
+          { prefix: "5. 昨天我到奶奶家，她做了一頓", suffix: "的午餐給我吃。", answer: "豐盛" }
+        ]
+      },
+      {
+        id: 17,
+        title: "第 17 組",
+        words: ["馬路", "青草", "地面", "成績", "快樂"],
+        questions: [
+          { prefix: "1. 過", suffix: "時，我們要注意安全！", answer: "馬路" },
+          { prefix: "2. 秋天到了，斜坡上的", suffix: "慢慢變黃了。", answer: "青草" },
+          { prefix: "3. 大雨過後，街道上的", suffix: "變得十分濕滑。", answer: "地面" },
+          { prefix: "4. 我希望在這次比賽中拿到好", suffix: "。", answer: "成績" },
+          { prefix: "5. 鳥兒每天在樹上唱歌，十分", suffix: "。", answer: "快樂" }
+        ]
+      },
+      {
+        id: 18,
+        title: "第 18 組 · 小羊故事篇",
+        words: ["渴", "到處", "漸漸", "終於", "喝水"],
+        questions: [
+          { prefix: "1. 小羊已經三天沒有東西吃了，又餓又", suffix: "。", answer: "渴" },
+          { prefix: "2. 牠走遍山頭，", suffix: "尋找食物。", answer: "到處" },
+          { prefix: "3. 走着走着，牠", suffix: "沒有力氣了，愈走愈慢。", answer: "漸漸" },
+          { prefix: "4. 牠看到遠處有小河，開心地喊道：「太好了，", suffix: "有水喝了！」", answer: "終於" },
+          { prefix: "5. 口渴的小羊急忙跑到河邊大口大口地", suffix: "。", answer: "喝水" }
+        ]
+      },
+      {
+        id: 19,
+        title: "第 19 組 · 詞彙精選複習",
+        words: ["安靜", "學生", "消息", "粗壯", "氣球"],
+        questions: [
+          { prefix: "1. 在圖書館內，我們必須保持", suffix: "，不要喧嘩。", answer: "安靜" },
+          { prefix: "2. 學校裏每一位", suffix: "都穿著整齊的校服。", answer: "學生" },
+          { prefix: "3. 老師帶來了一個好", suffix: "，下週五是旅行日！", answer: "消息" },
+          { prefix: "4. 校園裏有幾棵", suffix: "的大樹，枝葉茂盛。", answer: "粗壯" },
+          { prefix: "5. 妹妹手裏牽著五顏六色的", suffix: "，走在公園裏。", answer: "氣球" }
+        ]
+      }
+    ];
+
+    let currentGroupIndex = 0;
+    let userAnswers = {}; // { 0..4: word }
+    let activeBlankIndex = 0;
+    let toastTimeout = null;
+
+    // 自訂訊息框（不使用原生 alert）
+    function showToast(text, isError = false) {
+      const toast = document.getElementById('toast-message');
+      const toastText = document.getElementById('toast-text');
+      const toastIcon = document.getElementById('toast-icon');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+
+      toastText.innerText = text;
+      if (isError) {
+        toastIcon.className = "fa-solid fa-triangle-exclamation text-rose-400";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-info text-amber-400";
+      }
+
+      toast.classList.remove('hidden');
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 2500);
+    }
+
+    // 音效效果 (Web Audio API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type, duration) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function playSuccessSound() {
+      playTone(523.25, 'triangle', 0.18);
+      setTimeout(() => playTone(659.25, 'triangle', 0.18), 120);
+      setTimeout(() => playTone(783.99, 'triangle', 0.3), 240);
+    }
+
+    function playErrorSound() {
+      playTone(220, 'sine', 0.22);
+    }
+
+    // 將生詞數組打亂，並確保不與原答案順序相同
+    function shuffleWordsNotMatchingAnswers(words, questions) {
+      const originalAnswers = questions.map(q => q.answer);
+      let shuffled = [...words];
+
+      // Fisher-Yates 洗牌算法
+      const shuffle = (arr) => {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
+      // 至少洗牌一次，並循環檢查是否與題目的答案順序完全一致
+      let attempts = 0;
+      do {
+        shuffled = shuffle([...words]);
+        attempts++;
+        // 檢查是否完全與題目答案順序相同
+        const isIdenticalOrder = shuffled.every((w, idx) => w === originalAnswers[idx]);
+        if (!isIdenticalOrder) {
+          break;
+        }
+      } while (attempts < 20);
+
+      return shuffled;
+    }
+
+    // 初始化與加載特定組
+    function loadGroup(index) {
+      currentGroupIndex = index;
+      userAnswers = {};
+      activeBlankIndex = 0;
+
+      const group = groupsData[currentGroupIndex];
+
+      // 更新頂部資訊
+      document.getElementById('current-level-title').innerText = group.title;
+      document.getElementById('badge-level').innerText = `第 ${group.id} 組 / ${groupsData.length}`;
+      document.getElementById('total-groups-count').innerText = groupsData.length;
+
+      // 更新進度
+      updateProgress();
+
+      // 打亂生詞排序，確保不與答案順序相同
+      const displayWords = shuffleWordsNotMatchingAnswers(group.words, group.questions);
+
+      // 渲染打亂後的詞語庫（每組固定 5 個詞）
+      renderWordBank(displayWords);
+
+      // 渲染 5 題填充
+      renderQuestions(group.questions);
+
+      // 渲染選組彈窗按鈕
+      renderLevelGrid();
+    }
+
+    function renderWordBank(words) {
+      const container = document.getElementById('word-bank');
+      container.innerHTML = '';
+
+      words.forEach(word => {
+        const btn = document.createElement('button');
+        btn.className = `word-chip bg-white text-slate-800 font-bold px-4 py-2 rounded-xl border-2 border-amber-300 shadow-sm hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 text-base md:text-lg`;
+        btn.innerText = word;
+        btn.dataset.word = word;
+        btn.onclick = () => onSelectWord(word);
+        container.appendChild(btn);
+      });
+      updateWordChipsStatus();
+    }
+
+    function renderQuestions(questions) {
+      const container = document.getElementById('questions-list');
+      container.innerHTML = '';
+
+      questions.forEach((q, idx) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center flex-wrap p-2.5 hover:bg-slate-50 rounded-xl transition border border-transparent hover:border-slate-100';
+
+        const prefix = document.createElement('span');
+        prefix.innerText = q.prefix;
+        item.appendChild(prefix);
+
+        const slot = document.createElement('span');
+        slot.className = `blank-slot ${activeBlankIndex === idx ? 'active' : ''}`;
+        slot.dataset.index = idx;
+        slot.id = `blank-slot-${idx}`;
+        slot.innerText = userAnswers[idx] || `( ${idx + 1} )`;
+        if (!userAnswers[idx]) {
+          slot.classList.add('text-slate-300');
+        }
+
+        slot.onclick = () => {
+          if (userAnswers[idx]) {
+            // 清除已填
+            delete userAnswers[idx];
+            slot.innerText = `( ${idx + 1} )`;
+            slot.classList.add('text-slate-300');
+            slot.classList.remove('correct', 'incorrect');
+            activeBlankIndex = idx;
+            highlightActiveSlot();
+            updateWordChipsStatus();
+            updateProgress();
+          } else {
+            activeBlankIndex = idx;
+            highlightActiveSlot();
+          }
+        };
+
+        item.appendChild(slot);
+
+        const suffix = document.createElement('span');
+        suffix.innerText = q.suffix;
+        item.appendChild(suffix);
+
+        container.appendChild(item);
+      });
+    }
+
+    function highlightActiveSlot() {
+      const slots = document.querySelectorAll('.blank-slot');
+      slots.forEach(slot => {
+        const idx = parseInt(slot.dataset.index);
+        if (idx === activeBlankIndex) {
+          slot.classList.add('active');
+        } else {
+          slot.classList.remove('active');
+        }
+      });
+    }
+
+    function onSelectWord(word) {
+      // 5 題固定
+      const total = 5;
+
+      // 如果當前槽位已填，自動找第一個空格
+      if (userAnswers[activeBlankIndex] !== undefined) {
+        let nextEmpty = -1;
+        for (let i = 0; i < total; i++) {
+          if (!userAnswers[i]) {
+            nextEmpty = i;
+            break;
+          }
+        }
+        if (nextEmpty !== -1) {
+          activeBlankIndex = nextEmpty;
+        }
+      }
+
+      // 填入
+      userAnswers[activeBlankIndex] = word;
+      const slot = document.getElementById(`blank-slot-${activeBlankIndex}`);
+      if (slot) {
+        slot.innerText = word;
+        slot.classList.remove('text-slate-300', 'correct', 'incorrect');
+      }
+
+      // 自動跳往下一空格
+      let nextEmpty = -1;
+      for (let i = 0; i < total; i++) {
+        if (!userAnswers[i]) {
+          nextEmpty = i;
+          break;
+        }
+      }
+      activeBlankIndex = nextEmpty !== -1 ? nextEmpty : activeBlankIndex;
+
+      highlightActiveSlot();
+      updateWordChipsStatus();
+      updateProgress();
+      playTone(480, 'sine', 0.08);
+    }
+
+    function updateWordChipsStatus() {
+      const usedWords = Object.values(userAnswers);
+      const chips = document.querySelectorAll('.word-chip');
+      chips.forEach(chip => {
+        const word = chip.dataset.word;
+        const countUsed = usedWords.filter(w => w === word).length;
+        if (countUsed > 0) {
+          chip.classList.add('used');
+        } else {
+          chip.classList.remove('used');
+        }
+      });
+    }
+
+    function updateProgress() {
+      const total = 5;
+      const filledCount = Object.keys(userAnswers).length;
+
+      document.getElementById('progress-text').innerText = `${filledCount} / ${total}`;
+      const pct = (filledCount / total) * 100;
+      document.getElementById('progress-bar').style.width = `${pct}%`;
+    }
+
+    function checkAnswers() {
+      const group = groupsData[currentGroupIndex];
+      let allCorrect = true;
+      let unanswered = 0;
+
+      for (let i = 0; i < 5; i++) {
+        const expected = group.questions[i].answer;
+        const slot = document.getElementById(`blank-slot-${i}`);
+        const userAns = userAnswers[i];
+
+        if (!userAns) {
+          unanswered++;
+          allCorrect = false;
+          slot.classList.remove('correct');
+          slot.classList.add('incorrect');
+        } else if (userAns === expected) {
+          slot.classList.remove('incorrect');
+          slot.classList.add('correct');
+        } else {
+          allCorrect = false;
+          slot.classList.remove('correct');
+          slot.classList.add('incorrect');
+        }
+      }
+
+      if (allCorrect) {
+        playSuccessSound();
+        triggerConfetti();
+        document.getElementById('success-dialog').classList.remove('hidden');
+      } else {
+        playErrorSound();
+        if (unanswered > 0) {
+          showToast(`還有 ${unanswered} 題未填，紅框需要再想想喔！`, true);
+        } else {
+          showToast('部分答案不太正確，檢查一下紅色的格子吧！', true);
+        }
+      }
+    }
+
+    function triggerConfetti() {
+      confetti({
+        particleCount: 70,
+        spread: 60,
+        origin: { y: 0.6 }
+      });
+    }
+
+    function closeSuccessDialog() {
+      document.getElementById('success-dialog').classList.add('hidden');
+    }
+
+    function prevLevel() {
+      if (currentGroupIndex > 0) {
+        closeSuccessDialog();
+        loadGroup(currentGroupIndex - 1);
+      } else {
+        showToast('已經是第 1 組囉！');
+      }
+    }
+
+    function nextLevel() {
+      if (currentGroupIndex < groupsData.length - 1) {
+        closeSuccessDialog();
+        loadGroup(currentGroupIndex + 1);
+      } else {
+        showToast('🎉 恭喜！你已經完成了全部 19 組供詞填充練習！');
+      }
+    }
+
+    function resetCurrentLevel() {
+      loadGroup(currentGroupIndex);
+    }
+
+    function toggleLevelModal() {
+      const modal = document.getElementById('level-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    function renderLevelGrid() {
+      const grid = document.getElementById('level-grid-buttons');
+      grid.innerHTML = '';
+      groupsData.forEach((grp, idx) => {
+        const btn = document.createElement('button');
+        const isActive = idx === currentGroupIndex;
+        btn.className = `py-2.5 px-2 rounded-xl text-center font-bold text-sm transition ${
+          isActive 
+            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 ring-2 ring-blue-300' 
+            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+        }`;
+        btn.innerText = `第 ${grp.id} 組`;
+        btn.onclick = () => {
+          loadGroup(idx);
+          toggleLevelModal();
+        };
+        grid.appendChild(btn);
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('level-modal').classList.add('hidden');
+        closeSuccessDialog();
+      }
+    });
+
+    window.onload = () => {
+      loadGroup(0);
+    };
+  </script>
+</body>
+</html>

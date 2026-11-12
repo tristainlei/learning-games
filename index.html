@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小一互動學習遊戲樂園</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+            background-color: #f0f7ff;
+            color: #333;
+            padding: 30px 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+        header h1 {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        header p {
+            color: #666;
+            font-size: 16px;
+        }
+        /* 卡片網格排版：自動適應電腦與平板螢幕 */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        /* 單張遊戲卡片設計 */
+        .game-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            border-color: #4dabf7;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 14px;
+        }
+        .tag {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .tag-chi { background-color: #ffe3e3; color: #c92a2a; }
+        .tag-eng { background-color: #d0ebff; color: #1864ab; }
+        .tag-math { background-color: #fff3bf; color: #e67700; }
+        .game-card h2 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: #212529;
+        }
+        .game-card p {
+            font-size: 14px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎮 互動學習遊戲樂園</h1>
+        <p>點擊下方卡片開始挑戰！</p>
+    </header>
+
+    <main class="game-grid">
+        
+        <!-- 遊戲 1：中文（已對應 chinese_fill_P1.html） -->
+        <a href="chinese_fill_P1.html" class="game-card">
+            <div class="icon">✍️</div>
+            <span class="tag tag-chi">中文科 (P1)</span>
+            <h2>小一中文填充遊戲</h2>
+            <p>練習詞語搭配與句子填空</p>
+        </a>
+
+        <!-- 遊戲 2：英文（已對應 english_pronouns_P1.html） -->
+        <a href="english_pronouns_P1.html" class="game-card">
+            <div class="icon">🔤</div>
+            <span class="tag tag-eng">英文科 (P1)</span>
+            <h2>英文代名詞大挑戰</h2>
+            <p>認識 He / She / It / They 的用法</p>
+        </a>
+
+        <!-- 遊戲 3：數學（已對應 bee_maze_P1.html） -->
+        <a href="bee_maze_P1.html" class="game-card">
+            <div class="icon">🐝</div>
+            <span class="tag tag-math">數學科 (P1)</span>
+            <h2>蜜蜂採蜜倍數迷宮</h2>
+            <p>找出正確的倍數路徑幫助小蜜蜂採蜜</p>
+        </a>
+
+        <!-- 【日後新增遊戲】只要複製上面其中一組 <a href="...">...</a> 貼在這裡，並修改檔名與標題即可！ -->
+
+    </main>
+
+</body>
+</html>

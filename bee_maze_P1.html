@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐝 蜜蜂採蜜倍數迷宮生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fefce8;
+            color: #78350f;
+        }
+        .font-fredoka {
+            font-family: 'Fredoka One', cursive;
+        }
+        
+        /* 列印專用樣式 */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: white !important;
+            }
+            .print-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+            }
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+        }
+
+        /* 六角形按鈕動畫特規 */
+        .btn-hover-effect {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-hover-effect:hover {
+            transform: translateY(-2px) scale(1.03);
+        }
+        .btn-hover-effect:active {
+            transform: translateY(1px) scale(0.97);
+        }
+
+        /* 蜜蜂跳動特效特製 */
+        @keyframes subtle-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-subtle-bounce {
+            animation: subtle-bounce 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 sm:p-4 select-none">
+
+    <!-- 控制面板 Header (列印時隱藏) -->
+    <header class="no-print w-full max-w-4xl bg-amber-100/90 backdrop-blur border-2 border-amber-300 rounded-2xl p-4 mb-4 shadow-lg transition-all">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- 標題區 -->
+            <div class="text-center md:text-left flex items-center gap-3">
+                <div class="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-3xl shadow-inner animate-subtle-bounce">
+                    🐝
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black text-amber-900 tracking-wide flex items-center gap-2">
+                        蜜蜂採蜜倍數迷宮
+                    </h1>
+                    <p class="text-xs sm:text-sm font-semibold text-amber-700">帶領小蜜蜂踩著目標倍數，採滿蜂蜜順利回家！</p>
+                </div>
+            </div>
+
+            <!-- 倍數選擇與控制器 -->
+            <div class="flex flex-wrap items-center justify-center gap-3">
+                <div class="flex items-center bg-white px-3 py-1.5 rounded-xl border-2 border-amber-300 shadow-sm">
+                    <label for="multipleSelect" class="text-sm font-bold text-amber-800 mr-2">🎯 目標倍數：</label>
+                    <select id="multipleSelect" class="bg-amber-50 text-amber-900 font-extrabold text-base rounded-lg p-1 border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer">
+                        <!-- 由 JS 動態生成 2 至 12 -->
+                    </select>
+                </div>
+
+                <!-- 難度切換按鈕群 -->
+                <div class="flex items-center bg-white p-1 rounded-xl border-2 border-amber-300 shadow-sm gap-1">
+                    <button id="btnModeNormal" class="px-3 py-1 rounded-lg text-sm font-extrabold transition-all bg-amber-400 text-amber-950 shadow">
+                        🌱 普通級
+                    </button>
+                    <button id="btnModeChallenge" class="px-3 py-1 rounded-lg text-sm font-extrabold transition-all bg-amber-50 text-amber-700 hover:bg-amber-100">
+                        🔥 挑戰級
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能按鈕群 -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mt-4 pt-3 border-t border-amber-200">
+            <button id="btnNewGame" class="btn-hover-effect bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-amber-950 font-bold px-3.5 py-2 rounded-xl text-sm shadow flex items-center gap-1.5">
+                🎲 隨機迷宮
+            </button>
+            <button id="btnUndo" class="btn-hover-effect bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold px-3.5 py-2 rounded-xl text-sm shadow flex items-center gap-1.5">
+                ↩️ 撤銷一步
+            </button>
+            <button id="btnClear" class="btn-hover-effect bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold px-3.5 py-2 rounded-xl text-sm shadow flex items-center gap-1.5">
+                🧹 重走路線
+            </button>
+            <button id="btnToggleSolution" class="btn-hover-effect bg-emerald-200 hover:bg-emerald-300 text-emerald-900 font-bold px-3.5 py-2 rounded-xl text-sm shadow flex items-center gap-1.5">
+                💡 顯示解答
+            </button>
+            <button id="btnPrint" class="btn-hover-effect bg-sky-200 hover:bg-sky-300 text-sky-900 font-bold px-3.5 py-2 rounded-xl text-sm shadow flex items-center gap-1.5">
+                🖨️ 列印 / 下載 PDF
+            </button>
+        </div>
+    </header>
+
+    <!-- 主要迷宮畫布卡片區 -->
+    <main class="print-container w-full max-w-4xl flex flex-col items-center justify-center bg-white/80 rounded-3xl p-3 sm:p-6 shadow-xl border-4 border-amber-200 relative">
+        
+        <!-- 列印時顯示的標題 -->
+        <div class="hidden print:block text-center mb-4">
+            <h1 class="text-3xl font-extrabold text-black">🐝 蜜蜂採蜜倍數迷宮學習單</h1>
+            <p id="printSubtitle" class="text-base text-gray-700 mt-1">請幫小蜜蜂找出正確的倍數路徑採蜜回家吧！</p>
+            <div class="flex justify-between text-sm text-gray-600 mt-2 px-8">
+                <span>班級：____________</span>
+                <span>姓名：____________</span>
+                <span>座號：______</span>
+            </div>
+        </div>
+
+        <!-- Canvas 區域 -->
+        <div class="relative w-full flex justify-center items-center overflow-hidden rounded-2xl bg-gradient-to-b from-amber-50 to-orange-50/40 p-2 shadow-inner border border-amber-100">
+            <canvas id="mazeCanvas" class="cursor-pointer max-w-full touch-none"></canvas>
+        </div>
+
+        <!-- 🚀 提交答案按鈕 -->
+        <div class="no-print w-full flex flex-col items-center justify-center mt-5">
+            <button id="btnSubmit" class="animate-bounce bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-lg sm:text-xl px-8 py-3.5 rounded-full shadow-lg border-2 border-amber-200 transform transition active:scale-95 flex items-center gap-2">
+                <span>🚀</span>
+                <span>帶蜜蜂回家 (提交答案)</span>
+            </button>
+            <span class="text-xs font-medium text-amber-700/80 mt-1">走完迷宮抵達 FINISH 後，點擊這裡檢查成果喔！</span>
+        </div>
+    </main>
+
+    <!-- 頁尾宣告 -->
+    <footer class="no-print text-center text-xs font-semibold text-amber-800/60 mt-4 mb-2">
+        🐝 蜜蜂採蜜倍數迷宮生成器 &copy; 互動數學學習單
+    </footer>
+
+    <!-- 自訂 Modal 對話框 -->
+    <div id="resultModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
+        <div class="bg-white border-4 border-amber-400 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl transform scale-90 transition-transform duration-300 text-center relative">
+            <div id="modalIcon" class="text-6xl mb-3">🎉</div>
+            <h3 id="modalTitle" class="text-2xl font-black text-amber-900 mb-2">恭喜成功！</h3>
+            <div id="modalBody" class="text-amber-800 font-semibold text-base mb-6 leading-relaxed">
+                你非常流利地找出所有 N 的倍數，成功帶著小蜜蜂採滿蜂蜜順利回家囉！
+            </div>
+            <div id="modalActions" class="flex flex-wrap justify-center gap-3">
+                <button id="modalBtnClose" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold px-6 py-2.5 rounded-xl shadow">
+                    確定
+                </button>
+                <button id="modalBtnShowSolution" class="hidden bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl shadow flex items-center gap-1">
+                    💡 顯示正確答案
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Web Audio API 音效模組
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playStep() {
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(783.99, this.ctx.currentTime + 0.08);
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playUndo() {
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.12);
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            }
+
+            playWin() {
+                this.init();
+                if (!this.ctx) return;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+                    
+                    gain.gain.setValueAtTime(0.25, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.1 + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.1);
+                    osc.stop(this.ctx.currentTime + idx * 0.1 + 0.3);
+                });
+            }
+
+            playFail() {
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(150, this.ctx.currentTime + 0.3);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        }
+
+        const soundFX = new SoundFX();
+
+        // Confetti 粒子系統
+        class ConfettiSystem {
+            constructor() {
+                this.particles = [];
+                this.colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+            }
+
+            spawn(width, height, count = 70) {
+                this.particles = [];
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: width / 2 + (Math.random() - 0.5) * 200,
+                        y: height / 2,
+                        vx: (Math.random() - 0.5) * 12,
+                        vy: (Math.random() - 0.7) * 14,
+                        size: Math.random() * 8 + 4,
+                        color: this.colors[Math.floor(Math.random() * this.colors.length)],
+                        rotation: Math.random() * Math.PI * 2,
+                        vRot: (Math.random() - 0.5) * 0.2,
+                        opacity: 1
+                    });
+                }
+            }
+
+            updateAndDraw(ctx, width, height) {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.25;
+                    p.rotation += p.vRot;
+                    p.opacity -= 0.008;
+
+                    if (p.opacity <= 0 || p.y > height + 20) {
+                        this.particles.splice(i, 1);
+                        continue;
+                    }
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation);
+                    ctx.globalAlpha = Math.max(0, p.opacity);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                    ctx.restore();
+                }
+            }
+        }
+
+        const COLS = 5;
+        const ROWS = 8;
+
+        let targetMultiple = 7;
+        let gameMode = 'normal'; // 'normal' | 'challenge'
+        let grid = [];
+        let solutionPath = [];
+        let userPath = [];
+        
+        let beePos = { x: 0, y: 0 };
+        let showSolutionPath = false;
+        let animTimer = 0;
+
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const confetti = new ConfettiSystem();
+
+        window.addEventListener('load', () => {
+            initTargetMultipleDropdown();
+            initGameModeButtons();
+            resizeCanvas();
+            generateNewMaze();
+            requestAnimationFrame(gameLoop);
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
+
+        function initTargetMultipleDropdown() {
+            const select = document.getElementById('multipleSelect');
+            select.innerHTML = '';
+            for (let i = 2; i <= 12; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${i} 的倍數`;
+                if (i === 7) opt.selected = true;
+                select.appendChild(opt);
+            }
+            select.addEventListener('change', (e) => {
+                targetMultiple = parseInt(e.target.value, 10);
+                updatePrintSubtitle();
+                generateNewMaze();
+            });
+            updatePrintSubtitle();
+        }
+
+        function initGameModeButtons() {
+            const btnNormal = document.getElementById('btnModeNormal');
+            const btnChallenge = document.getElementById('btnModeChallenge');
+
+            function setMode(mode) {
+                if (gameMode === mode) return;
+                gameMode = mode;
+
+                if (gameMode === 'normal') {
+                    btnNormal.className = "px-3 py-1 rounded-lg text-sm font-extrabold transition-all bg-amber-400 text-amber-950 shadow";
+                    btnChallenge.className = "px-3 py-1 rounded-lg text-sm font-extrabold transition-all bg-amber-50 text-amber-700 hover:bg-amber-100";
+                } else {
+                    btnChallenge.className = "px-3 py-1 rounded-lg text-sm font-extrabold transition-all bg-orange-500 text-white shadow";
+                    btnNormal.className = "px-3 py-1 rounded-lg text-sm font-extrabold transition-all bg-amber-50 text-amber-700 hover:bg-amber-100";
+                }
+
+                updatePrintSubtitle();
+                generateNewMaze();
+            }
+
+            btnNormal.addEventListener('click', () => setMode('normal'));
+            btnChallenge.addEventListener('click', () => setMode('challenge'));
+        }
+
+        function updatePrintSubtitle() {
+            if (gameMode === 'challenge') {
+                document.getElementById('printSubtitle').textContent = `🔥 挑戰級：請帶領小蜜蜂找出所有 ${targetMultiple} 的倍數（隨機亂序，最高 10 倍），順利到達 FINISH 吧！`;
+            } else {
+                document.getElementById('printSubtitle').textContent = `請帶領小蜜蜂按照 ${targetMultiple} 的倍數順序採蜜，順利到達 FINISH 吧！`;
+            }
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const containerWidth = Math.min(container.clientWidth - 16, 700);
+            
+            const hexRadius = Math.max(24, Math.min(42, containerWidth / (COLS * 1.8)));
+            const hexWidth = Math.sqrt(3) * hexRadius;
+            const hexHeight = 2 * hexRadius;
+            
+            const canvasWidth = hexWidth * (COLS + 0.8);
+            const canvasHeight = hexHeight * 0.75 * (ROWS - 1) + hexHeight + 90;
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = canvasWidth * dpr;
+            canvas.height = canvasHeight * dpr;
+            canvas.style.width = `${canvasWidth}px`;
+            canvas.style.height = `${canvasHeight}px`;
+
+            ctx.scale(dpr, dpr);
+            updateGridPositions(canvasWidth, hexRadius);
+        }
+
+        function generateNewMaze() {
+            userPath = [];
+            showSolutionPath = false;
+
+            solutionPath = generateValidPath();
+
+            grid = [];
+            for (let r = 0; r < ROWS; r++) {
+                grid[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    grid[r][c] = {
+                        r, c,
+                        x: 0, y: 0,
+                        val: 0,
+                        isSolution: false,
+                        stepIndex: -1
+                    };
+                }
+            }
+
+            // 挑戰級時，從 1~10 抽取的亂序倍數陣列
+            let challengeMultipliers = [];
+            if (gameMode === 'challenge') {
+                const available = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                for (let i = available.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [available[i], available[j]] = [available[j], available[i]];
+                }
+                challengeMultipliers = available.slice(0, ROWS);
+            }
+
+            solutionPath.forEach((pos, index) => {
+                const cell = grid[pos.r][pos.c];
+                cell.isSolution = true;
+                cell.stepIndex = index + 1;
+                
+                if (gameMode === 'challenge') {
+                    cell.val = challengeMultipliers[index] * targetMultiple;
+                } else {
+                    cell.val = (index + 1) * targetMultiple;
+                }
+            });
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = grid[r][c];
+                    if (!cell.isSolution) {
+                        cell.val = generateDistractionNumber(targetMultiple);
+                    }
+                }
+            }
+
+            resizeCanvas();
+            const startCell = grid[solutionPath[0].r][solutionPath[0].c];
+            beePos = { x: startCell.x, y: startCell.y - 45 };
+        }
+
+        function generateValidPath() {
+            let path = [];
+            let currC = Math.floor(Math.random() * COLS);
+            path.push({ r: 0, c: currC });
+
+            for (let r = 0; r < ROWS - 1; r++) {
+                const neighbors = getValidLowerNeighbors(r, currC);
+                const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                currC = next.c;
+                path.push({ r: r + 1, c: currC });
+            }
+            return path;
+        }
+
+        function getValidLowerNeighbors(r, c) {
+            const neighbors = [];
+            const isOdd = (r % 2 === 1);
+
+            if (isOdd) {
+                if (c >= 0 && c < COLS) neighbors.push({ c: c });
+                if (c + 1 < COLS) neighbors.push({ c: c + 1 });
+            } else {
+                if (c - 1 >= 0) neighbors.push({ c: c - 1 });
+                if (c < COLS) neighbors.push({ c: c });
+            }
+
+            if (neighbors.length === 0) neighbors.push({ c: Math.min(Math.max(c, 0), COLS - 1) });
+            return neighbors;
+        }
+
+        function isHexNeighbor(p1, p2) {
+            if (Math.abs(p1.r - p2.r) > 1) return false;
+            if (p1.r === p2.r) return Math.abs(p1.c - p2.c) === 1;
+
+            const rMin = Math.min(p1.r, p2.r);
+            const isOdd = (rMin % 2 === 1);
+            const cUpper = (p1.r === rMin) ? p1.c : p2.c;
+            const cLower = (p1.r === rMin) ? p2.c : p1.c;
+
+            if (isOdd) {
+                return (cLower === cUpper || cLower === cUpper + 1);
+            } else {
+                return (cLower === cUpper || cLower === cUpper - 1);
+            }
+        }
+
+        function generateDistractionNumber(N) {
+            let val;
+            const maxFactor = (gameMode === 'challenge') ? 10 : 8;
+            do {
+                const baseStep = Math.floor(Math.random() * maxFactor) + 1;
+                const offsetOptions = [-3, -2, -1, 1, 2, 3, 4, 5];
+                const offset = offsetOptions[Math.floor(Math.random() * offsetOptions.length)];
+                val = baseStep * N + offset;
+            } while (val <= 0 || val % N === 0);
+            return val;
+        }
+
+        function updateGridPositions(canvasWidth, hexRadius) {
+            const hexWidth = Math.sqrt(3) * hexRadius;
+            const hexHeight = 2 * hexRadius;
+            const startX = (canvasWidth - (COLS + 0.5) * hexWidth) / 2 + hexWidth / 2 + 10;
+            const startY = 55 + hexRadius;
+
+            for (let r = 0; r < ROWS; r++) {
+                const isOdd = (r % 2 === 1);
+                const xOffset = isOdd ? hexWidth / 2 : 0;
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r] && grid[r][c]) {
+                        grid[r][c].x = startX + c * hexWidth + xOffset;
+                        grid[r][c].y = startY + r * (hexHeight * 0.75);
+                        grid[r][c].radius = hexRadius;
+                    }
+                }
+            }
+        }
+
+        function gameLoop(time) {
+            animTimer = time * 0.005;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawStartFinishLabels();
+            drawHoneycombGrid();
+
+            if (showSolutionPath) {
+                drawSolutionGuide();
+            }
+
+            drawUserHoneyTrail();
+            updateAndDrawBee();
+            confetti.updateAndDraw(ctx, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawStartFinishLabels() {
+            if (!grid[0] || !grid[0][0]) return;
+            ctx.save();
+            ctx.font = '900 28px "Noto Sans TC", "Fredoka One", sans-serif';
+            ctx.textAlign = 'center';
+            
+            ctx.fillStyle = '#d97706';
+            ctx.fillText('🐝 START ▼', grid[0][Math.floor(COLS/2)].x, 34);
+
+            const lastRowY = grid[ROWS - 1][0].y + grid[ROWS - 1][0].radius + 36;
+            ctx.fillStyle = '#16a34a';
+            ctx.fillText('FINISH 🍯', grid[ROWS - 1][Math.floor(COLS/2)].x, lastRowY);
+
+            ctx.restore();
+        }
+
+        function drawHexagon(x, y, r, fillColor, strokeColor, lineWidth = 2) {
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 180) * (60 * i - 30);
+                const hx = x + r * Math.cos(angle);
+                const hy = y + r * Math.sin(angle);
+                if (i === 0) ctx.moveTo(hx, hy);
+                else ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+        }
+
+        function drawHoneycombGrid() {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = grid[r][c];
+                    const userStepIdx = userPath.findIndex(p => p.r === r && p.c === c);
+                    const isVisited = userStepIdx !== -1;
+                    const isHead = userPath.length > 0 && userPath[userPath.length - 1].r === r && userPath[userPath.length - 1].c === c;
+                    
+                    const solStepIdx = cell.isSolution ? cell.stepIndex : -1;
+                    const isSolActive = showSolutionPath && cell.isSolution;
+
+                    let fillColor = '#fffde7';
+                    let strokeColor = '#fcd34d';
+                    let borderWidth = 2;
+
+                    if (isVisited) {
+                        fillColor = '#fde047';
+                        strokeColor = '#d97706';
+                        borderWidth = 3;
+                    }
+                    
+                    if (isSolActive) {
+                        fillColor = '#fbbf24';
+                        strokeColor = '#b45309';
+                        borderWidth = 3.5;
+                    }
+
+                    if (isHead) {
+                        fillColor = '#facc15';
+                        strokeColor = '#ea580c';
+                        borderWidth = 4;
+                    }
+
+                    drawHexagon(cell.x, cell.y, cell.radius, fillColor, strokeColor, borderWidth);
+
+                    let stepText = '';
+                    if (isSolActive) {
+                        stepText = `第${solStepIdx}步`;
+                    } else if (isVisited) {
+                        stepText = `第${userStepIdx + 1}步`;
+                    }
+
+                    ctx.save();
+                    if (stepText) {
+                        ctx.font = `bold ${Math.max(11, Math.round(cell.radius * 0.32))}px "Noto Sans TC", sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#92400e';
+                        ctx.fillText(stepText, cell.x, cell.y - cell.radius * 0.38);
+
+                        const fontSize = Math.max(24, Math.round(cell.radius * 0.72));
+                        ctx.font = `900 ${fontSize}px "Noto Sans TC", "Fredoka One", sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillText(cell.val, cell.x, cell.y + cell.radius * 0.18);
+                    } else {
+                        const fontSize = Math.max(26, Math.round(cell.radius * 0.82));
+                        ctx.font = `900 ${fontSize}px "Noto Sans TC", "Fredoka One", sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillText(cell.val, cell.x, cell.y + 2);
+                    }
+
+                    ctx.restore();
+                }
+            }
+        }
+
+        function drawUserHoneyTrail() {
+            if (userPath.length < 1) return;
+
+            ctx.save();
+            ctx.beginPath();
+            userPath.forEach((pos, idx) => {
+                const cell = grid[pos.r][pos.c];
+                if (idx === 0) ctx.moveTo(cell.x, cell.y);
+                else ctx.lineTo(cell.x, cell.y);
+            });
+
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.shadowColor = '#fef08a';
+            ctx.shadowBlur = 8;
+            ctx.stroke();
+            ctx.restore();
+
+            userPath.forEach((pos) => {
+                const cell = grid[pos.r][pos.c];
+                ctx.beginPath();
+                ctx.arc(cell.x, cell.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#d97706';
+                ctx.fill();
+            });
+        }
+
+        function drawSolutionGuide() {
+            if (solutionPath.length === 0) return;
+
+            ctx.save();
+            ctx.beginPath();
+            solutionPath.forEach((pos, idx) => {
+                const cell = grid[pos.r][pos.c];
+                if (idx === 0) ctx.moveTo(cell.x, cell.y);
+                else ctx.lineTo(cell.x, cell.y);
+            });
+
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([6, 6]);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function updateAndDrawBee() {
+            let targetX, targetY;
+
+            if (userPath.length > 0) {
+                const head = userPath[userPath.length - 1];
+                targetX = grid[head.r][head.c].x;
+                targetY = grid[head.r][head.c].y;
+            } else if (solutionPath.length > 0) {
+                const startCell = grid[solutionPath[0].r][solutionPath[0].c];
+                targetX = startCell.x;
+                targetY = startCell.y - 40;
+            } else {
+                return;
+            }
+
+            beePos.x += (targetX - beePos.x) * 0.15;
+            beePos.y += (targetY - beePos.y) * 0.15;
+
+            const floatOffsetY = Math.sin(animTimer * 3) * 5;
+            const bx = beePos.x;
+            const by = beePos.y + floatOffsetY;
+
+            ctx.save();
+            ctx.translate(bx, by);
+
+            const wingFlap = Math.sin(animTimer * 3.5) * 0.18;
+
+            ctx.strokeStyle = '#451a03';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(2, 9);
+            ctx.quadraticCurveTo(5, 15, 8, 14);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-6, 9);
+            ctx.quadraticCurveTo(-3, 15, 0, 14);
+            ctx.stroke();
+
+            ctx.fillStyle = '#451a03';
+            ctx.beginPath();
+            ctx.moveTo(-18, -1);
+            ctx.lineTo(-24, 2);
+            ctx.lineTo(-18, 5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.save();
+            ctx.rotate(-0.06);
+
+            ctx.beginPath();
+            ctx.ellipse(0, 1, 19, 14, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fill();
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#321405';
+            ctx.beginPath();
+            ctx.ellipse(-9, 1, 4.5, 13, 0.08, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(-1, 1, 4.5, 13.5, 0.08, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(11, -2, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#18181b';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(12.5, -3.8, 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(13, 4.5, 2.8, 0, Math.PI * 2);
+            ctx.fillStyle = '#fb7185';
+            ctx.fill();
+
+            ctx.strokeStyle = '#451a03';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(11, -7);
+            ctx.quadraticCurveTo(14, -16, 19, -15);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(19, -15, 1.8, 0, Math.PI * 2);
+            ctx.fillStyle = '#451a03';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(8, -8);
+            ctx.quadraticCurveTo(10, -15, 14, -14);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(14, -14, 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#451a03';
+            ctx.fill();
+
+            ctx.restore();
+
+            ctx.fillStyle = 'rgba(224, 242, 254, 0.88)';
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 1.8;
+
+            ctx.save();
+            ctx.translate(-6, -8);
+            ctx.rotate(-0.45 + wingFlap * 0.6);
+            ctx.beginPath();
+            ctx.ellipse(0, -9, 5.5, 11, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(1, -10);
+            ctx.rotate(-0.15 + wingFlap);
+            ctx.beginPath();
+            ctx.ellipse(0, -12, 7.5, 15, -0.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        // Pointer event listener
+        canvas.addEventListener('pointerdown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
+            const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
+
+            const clickX = (e.clientX - rect.left) * scaleX;
+            const clickY = (e.clientY - rect.top) * scaleY;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = grid[r][c];
+                    const dist = Math.hypot(cell.x - clickX, cell.y - clickY);
+                    if (dist <= cell.radius) {
+                        handleHexClick(r, c);
+                        return;
+                    }
+                }
+            }
+        });
+
+        function handleHexClick(r, c) {
+            soundFX.init();
+
+            if (userPath.length === 0) {
+                if (r === 0) {
+                    userPath.push({ r, c });
+                    soundFX.playStep();
+                }
+                return;
+            }
+
+            const lastStep = userPath[userPath.length - 1];
+
+            if (lastStep.r === r && lastStep.c === c) {
+                userPath.pop();
+                soundFX.playUndo();
+                return;
+            }
+
+            if (isHexNeighbor(lastStep, { r, c })) {
+                const alreadyVisited = userPath.some(p => p.r === r && p.c === c);
+                if (!alreadyVisited) {
+                    userPath.push({ r, c });
+                    soundFX.playStep();
+                }
+            }
+        }
+
+        document.getElementById('btnSubmit').addEventListener('click', validateAnswer);
+
+        function validateAnswer() {
+            soundFX.init();
+
+            if (userPath.length === 0) {
+                showModal('⚠️ 尚未出發', '請先點擊頂層數字，帶領小蜜蜂出發採蜜喔！', '🤔');
+                return;
+            }
+
+            const wrongNumbers = [];
+            userPath.forEach(pos => {
+                const cell = grid[pos.r][pos.c];
+                if (cell.val % targetMultiple !== 0) {
+                    if (!wrongNumbers.includes(cell.val)) {
+                        wrongNumbers.push(cell.val);
+                    }
+                }
+            });
+
+            const reachedFinish = (userPath[userPath.length - 1].r === ROWS - 1);
+
+            if (wrongNumbers.length === 0 && reachedFinish) {
+                soundFX.playWin();
+                confetti.spawn(canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+                
+                const winMsg = (gameMode === 'challenge')
+                    ? `太厲害了！你成功挑戰【🔥 挑戰級亂序模式】，準確找出所有 1~10 倍範圍內 ${targetMultiple} 的倍數，帶著小蜜蜂順利回家囉！`
+                    : `你非常流利地找出所有 ${targetMultiple} 的倍數，成功帶著小蜜蜂採滿蜂蜜順利回家囉！`;
+
+                showModal(
+                    '🎉 恭喜成功！',
+                    winMsg,
+                    '🍯'
+                );
+            } else if (wrongNumbers.length > 0) {
+                soundFX.playFail();
+                const wrongText = wrongNumbers.map(n => `【${n}】`).join('、');
+                showModal(
+                    '❌ 小蜜蜂採錯花蜜囉！',
+                    `小蜜蜂不小心採到了數字 ${wrongText}，這些都不是 ${targetMultiple} 的倍數喔！再檢查看看吧！`,
+                    '🐝',
+                    true
+                );
+            } else if (!reachedFinish) {
+                soundFX.playFail();
+                showModal(
+                    '⚠️ 還沒抵達終點喔！',
+                    `小蜜蜂還停在迷宮中，記得要一路採蜜到達最後一行的 FINISH 終點喔！`,
+                    '🏃‍♂️'
+                );
+            }
+        }
+
+        function showModal(title, bodyText, icon, canShowSolution = false) {
+            const modal = document.getElementById('resultModal');
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').textContent = bodyText;
+            document.getElementById('modalIcon').textContent = icon;
+
+            const solutionBtn = document.getElementById('modalBtnShowSolution');
+            if (canShowSolution) {
+                solutionBtn.classList.remove('hidden');
+            } else {
+                solutionBtn.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.children[0].classList.remove('scale-90');
+                modal.children[0].classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('resultModal');
+            modal.classList.add('opacity-0');
+            modal.children[0].classList.remove('scale-100');
+            modal.children[0].classList.add('scale-90');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        document.getElementById('modalBtnClose').addEventListener('click', closeModal);
+        document.getElementById('modalBtnShowSolution').addEventListener('click', () => {
+            closeModal();
+            showSolutionPath = true;
+        });
+
+        document.getElementById('btnNewGame').addEventListener('click', () => {
+            soundFX.playStep();
+            generateNewMaze();
+        });
+
+        document.getElementById('btnUndo').addEventListener('click', () => {
+            if (userPath.length > 0) {
+                soundFX.playUndo();
+                userPath.pop();
+            }
+        });
+
+        document.getElementById('btnClear').addEventListener('click', () => {
+            soundFX.playUndo();
+            userPath = [];
+            showSolutionPath = false;
+        });
+
+        document.getElementById('btnToggleSolution').addEventListener('click', () => {
+            soundFX.playStep();
+            showSolutionPath = !showSolutionPath;
+        });
+
+        // 🖨️ PDF 學習單生成與下載邏輯
+        document.getElementById('btnPrint').addEventListener('click', generatePDFWorksheet);
+
+        function generatePDFWorksheet() {
+            soundFX.init();
+            soundFX.playStep();
+
+            // 建立高解析度離屏 Canvas (對應 A4 尺寸 210mm x 297mm @ 高 DPI)
+            const w = 1600;
+            const h = Math.round(1600 * (297 / 210)); // 2263px
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = w;
+            offCanvas.height = h;
+            const offCtx = offCanvas.getContext('2d');
+
+            // 1. 純白背景
+            offCtx.fillStyle = '#ffffff';
+            offCtx.fillRect(0, 0, w, h);
+
+            // 2. 學習單主標題
+            offCtx.fillStyle = '#78350f';
+            offCtx.font = '900 62px "Noto Sans TC", sans-serif';
+            offCtx.textAlign = 'center';
+            offCtx.fillText('🐝 蜜蜂採蜜倍數迷宮學習單', w / 2, 140);
+
+            // 3. 目標說明
+            offCtx.fillStyle = '#b45309';
+            offCtx.font = 'bold 30px "Noto Sans TC", sans-serif';
+            const subtitleText = (gameMode === 'challenge')
+                ? `🔥 挑戰級：請帶領小蜜蜂找出所有 ${targetMultiple} 的倍數（隨機亂序，最高 10 倍），順利到達 FINISH 吧！`
+                : `請帶領小蜜蜂按照 ${targetMultiple} 的倍數順序採蜜，順利到達 FINISH 吧！`;
+            offCtx.fillText(subtitleText, w / 2, 215);
+
+            // 4. 學生簽名個人資料區
+            offCtx.font = '600 30px "Noto Sans TC", sans-serif';
+            offCtx.fillStyle = '#475569';
+            offCtx.textAlign = 'left';
+            offCtx.fillText('班級：____________', 160, 295);
+            offCtx.textAlign = 'center';
+            offCtx.fillText('姓名：____________', w / 2, 295);
+            offCtx.textAlign = 'right';
+            offCtx.fillText('座號：______', w - 160, 295);
+
+            // 裝飾分隔線
+            offCtx.strokeStyle = '#fcd34d';
+            offCtx.lineWidth = 4;
+            offCtx.beginPath();
+            offCtx.moveTo(140, 335);
+            offCtx.lineTo(w - 140, 335);
+            offCtx.stroke();
+
+            // 5. 迷宮蜂巢計算
+            const maxMazeWidth = w - 240;
+            const hexRadius = Math.min(
+                maxMazeWidth / (Math.sqrt(3) * (COLS + 0.8)),
+                105
+            );
+            const hexWidth = Math.sqrt(3) * hexRadius;
+            const hexHeight = 2 * hexRadius;
+
+            const mazeStartX = (w - (COLS + 0.5) * hexWidth) / 2 + hexWidth / 2;
+            const mazeStartY = 460 + hexRadius;
+
+            // START 標示
+            offCtx.font = '900 48px "Noto Sans TC", sans-serif';
+            offCtx.textAlign = 'center';
+            offCtx.fillStyle = '#d97706';
+            offCtx.fillText('🐝 START ▼', w / 2, 425);
+
+            // 繪製乾淨解題用蜂巢網格
+            for (let r = 0; r < ROWS; r++) {
+                const isOdd = (r % 2 === 1);
+                const xOffset = isOdd ? hexWidth / 2 : 0;
+                for (let c = 0; c < COLS; c++) {
+                    const cell = grid[r][c];
+                    const cx = mazeStartX + c * hexWidth + xOffset;
+                    const cy = mazeStartY + r * (hexHeight * 0.75);
+
+                    // 六角形邊界
+                    offCtx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (Math.PI / 180) * (60 * i - 30);
+                        const hx = cx + hexRadius * Math.cos(angle);
+                        const hy = cy + hexRadius * Math.sin(angle);
+                        if (i === 0) offCtx.moveTo(hx, hy);
+                        else offCtx.lineTo(hx, hy);
+                    }
+                    offCtx.closePath();
+
+                    offCtx.fillStyle = '#fffde7';
+                    offCtx.fill();
+                    offCtx.strokeStyle = '#fcd34d';
+                    offCtx.lineWidth = 4;
+                    offCtx.stroke();
+
+                    // 數字
+                    offCtx.font = `900 ${Math.round(hexRadius * 0.75)}px "Noto Sans TC", "Fredoka One", sans-serif`;
+                    offCtx.textAlign = 'center';
+                    offCtx.textBaseline = 'middle';
+                    offCtx.fillStyle = '#0f172a';
+                    offCtx.fillText(cell.val, cx, cy + 4);
+                }
+            }
+
+            // FINISH 標示
+            const lastRowY = mazeStartY + (ROWS - 1) * (hexHeight * 0.75) + hexRadius + 60;
+            offCtx.font = '900 48px "Noto Sans TC", sans-serif';
+            offCtx.textAlign = 'center';
+            offCtx.fillStyle = '#16a34a';
+            offCtx.fillText('FINISH 🍯', w / 2, lastRowY);
+
+            // 6. 頁尾版權
+            offCtx.fillStyle = '#94a3b8';
+            offCtx.font = '24px "Noto Sans TC", sans-serif';
+            offCtx.textAlign = 'center';
+            offCtx.fillText('🐝 蜜蜂採蜜倍數迷宮生成器 - 互動數學學習單', w / 2, h - 70);
+
+            // 7. 轉出為 PDF 檔案下載
+            const imgData = offCanvas.toDataURL('image/png');
+
+            if (window.jspdf && window.jspdf.jsPDF) {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+                pdf.save(`蜜蜂採蜜倍數迷宮學習單_${targetMultiple}的倍數.pdf`);
+            } else {
+                const link = document.createElement('a');
+                link.download = `蜜蜂採蜜倍數迷宮學習單_${targetMultiple}的倍數.png`;
+                link.href = imgData;
+                link.click();
+            }
+
+            try {
+                window.print();
+            } catch (e) {
+                // 忽略 iFrame 沙盒環境無法引發視窗列印的狀況
+            }
+        }
+    </script>
+</body>
+</html>
