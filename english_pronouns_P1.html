@@ -14,22 +14,23 @@
             background-size: 24px 24px;
         }
         .blank-slot {
-            display: inline-block;
-            min-width: 75px;
-            height: 34px;
-            line-height: 30px;
-            text-align: center;
-            border-bottom: 3px solid #38bdf8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 82px;
+            height: 38px;
+            border: 2px solid #7dd3fc;
+            border-bottom: 4px solid #0284c7;
             background-color: #ffffff;
-            color: #0284c7;
-            font-weight: 600;
-            border-radius: 6px;
-            padding: 0 10px;
-            margin: 0 4px;
+            color: #0369a1;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 0 8px;
+            margin: 2px 4px;
             cursor: pointer;
             transition: all 0.2s;
             vertical-align: middle;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
         }
         .blank-slot:hover {
             background-color: #e0f2fe;
@@ -37,27 +38,41 @@
         }
         .blank-slot.active {
             border-color: #f59e0b;
+            border-bottom-color: #d97706;
             background-color: #fef3c7;
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
         }
         .blank-slot.correct {
             border-color: #22c55e;
+            border-bottom-color: #16a34a;
             background-color: #dcfce7;
             color: #15803d;
             cursor: default;
         }
         .blank-slot.wrong {
             border-color: #ef4444;
+            border-bottom-color: #dc2626;
             background-color: #fee2e2;
             color: #b91c1c;
             animation: shake 0.4s;
         }
+        .blank-slot input {
+            width: 68px;
+            background: transparent;
+            border: none;
+            outline: none;
+            text-align: center;
+            font-weight: 700;
+            color: inherit;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 1.05rem;
+        }
         .word-chip {
-            transition: all 0.2s;
+            transition: all 0.15s;
             user-select: none;
         }
         .word-chip:active {
-            transform: scale(0.95);
+            transform: scale(0.94);
         }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -66,110 +81,132 @@
             75% { transform: translateX(-5px); }
         }
         .bounce-in {
-            animation: bounceIn 0.5s;
+            animation: bounceIn 0.45s;
         }
         @keyframes bounceIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            60% { transform: scale(1.05); opacity: 1; }
+            0% { transform: scale(0.85); opacity: 0; }
+            60% { transform: scale(1.04); opacity: 1; }
             100% { transform: scale(1); }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 text-slate-800">
+<body class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-5 text-slate-800">
 
     <!-- Header -->
-    <header class="w-full max-w-3xl bg-white rounded-3xl shadow-lg p-6 mb-6 border-4 border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <header class="w-full max-w-4xl bg-white rounded-3xl shadow-lg p-5 sm:p-6 mb-5 border-4 border-sky-200 flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+            <div class="w-14 h-14 bg-amber-400 rounded-2xl flex items-center justify-center text-3xl shadow-inner shrink-0">
                 ✏️
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-sky-900">英文代名詞大挑戰 (P1)</h1>
-                <p class="text-sm text-slate-500">Pronouns & Possessive Adjectives</p>
+                <h1 class="text-xl sm:text-2xl font-bold text-sky-900">英文代名詞大挑戰 (P1)</h1>
+                <p class="text-xs sm:text-sm text-slate-500">Pronoun and Possessive Adjectives (練習 1 - 10)</p>
             </div>
         </div>
         
-        <div class="flex items-center gap-4">
-            <div class="bg-amber-100 px-4 py-2 rounded-2xl border-2 border-amber-300 flex items-center gap-2">
-                <span class="text-xl">⭐</span>
-                <span class="font-bold text-amber-800 text-lg" id="score-display">0</span>
+        <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            <button id="sound-toggle" onclick="toggleSound()" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-2xl border-2 border-slate-200 font-bold text-slate-700 text-sm transition flex items-center gap-1" title="開關音效">
+                <span id="sound-icon">🔊</span>
+                <span class="hidden sm:inline" id="sound-text">音效開</span>
+            </button>
+            <div class="bg-amber-100 px-3.5 py-2 rounded-2xl border-2 border-amber-300 flex items-center gap-1.5">
+                <span class="text-lg">⭐</span>
+                <span class="font-bold text-amber-800 text-base sm:text-lg"><span id="stars-count">0</span> / 15</span>
             </div>
-            <div class="bg-sky-100 px-4 py-2 rounded-2xl border-2 border-sky-300 font-bold text-sky-800">
-                關卡 <span id="level-indicator">1</span> / 8
+            <div class="bg-sky-100 px-3.5 py-2 rounded-2xl border-2 border-sky-300 font-bold text-sky-800 text-sm sm:text-base">
+                關卡 <span id="level-indicator">1</span> / 15
             </div>
         </div>
     </header>
 
     <!-- Main Game Container -->
-    <main class="w-full max-w-3xl bg-white rounded-3xl shadow-xl p-6 sm:p-8 border-4 border-sky-200 relative">
+    <main class="w-full max-w-4xl bg-white rounded-3xl shadow-xl p-5 sm:p-8 border-4 border-sky-200 relative">
         
         <!-- Level Selector Tabs -->
-        <div class="flex flex-wrap gap-2 mb-6 justify-center" id="level-tabs">
-            <!-- Generated by JS -->
+        <div class="mb-5">
+            <div class="text-xs font-bold text-slate-400 mb-2 text-center">關卡選擇（點擊切換題目）</div>
+            <div class="flex flex-wrap gap-1.5 sm:gap-2 justify-center" id="level-tabs">
+                <!-- Generated by JS -->
+            </div>
         </div>
 
-        <!-- Instructions -->
-        <div class="bg-sky-50 border-l-4 border-sky-400 p-3 rounded-r-xl mb-6 flex items-center justify-between">
-            <p class="text-sky-900 text-sm sm:text-base font-medium">
-                💡 <strong>玩法：</strong>先點選句子中的空格，再點擊下方字庫的單字填入！
-            </p>
-            <button onclick="resetCurrentLevel()" class="text-xs bg-white hover:bg-sky-100 text-sky-700 font-bold py-1.5 px-3 rounded-lg border border-sky-200 shadow-sm transition">
-                🔄 重設本關
-            </button>
+        <!-- Level Title & Controls -->
+        <div class="bg-sky-50 border-l-4 border-sky-400 p-3.5 rounded-r-2xl mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h2 id="level-title" class="font-bold text-sky-950 text-base sm:text-lg">第 1 關</h2>
+                <p class="text-sky-800 text-xs sm:text-sm mt-0.5">
+                    💡 點選空格後點擊「字庫」或直接打字；點擊已填空格可清除重選。
+                </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <button onclick="resetCurrentLevel()" class="text-xs sm:text-sm bg-white hover:bg-sky-100 text-sky-700 font-bold py-2 px-3 rounded-xl border border-sky-200 shadow-sm transition">
+                    🔄 重新開始
+                </button>
+                <button onclick="resetAllProgress()" class="text-xs bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 font-bold py-2 px-2.5 rounded-xl border border-slate-200 transition" title="清除所有過關紀錄">
+                    🗑️ 清除紀錄
+                </button>
+            </div>
         </div>
 
         <!-- Word Bank -->
-        <div class="mb-8">
-            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 text-center">字庫 (Word Bank) - 可重複使用</div>
-            <div id="word-bank" class="flex flex-wrap justify-center gap-3 p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+        <div class="mb-6">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 text-center">字庫 (Word Bank) - 點擊單字填入空格</div>
+            <div id="word-bank" class="flex flex-wrap justify-center gap-2.5 sm:gap-3 p-3.5 sm:p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
                 <!-- Word chips generated by JS -->
             </div>
         </div>
 
         <!-- Passage Area -->
-        <div id="passage-container" class="text-lg sm:text-xl leading-loose text-slate-700 bg-amber-50/40 p-6 rounded-2xl border-2 border-amber-100 mb-8">
+        <div id="passage-container" class="text-lg sm:text-xl leading-loose text-slate-700 bg-amber-50/50 p-5 sm:p-7 rounded-2xl border-2 border-amber-100 mb-6">
             <!-- Passage text with blanks generated by JS -->
         </div>
 
+        <!-- Grammar Tip Box (for special notes like Level 15) -->
+        <div id="level-tip-box" class="hidden mb-6 p-3.5 rounded-2xl bg-indigo-50 border-2 border-indigo-200 text-indigo-900 text-sm sm:text-base font-medium flex items-center gap-2">
+        </div>
+
         <!-- Feedback Message -->
-        <div id="feedback-box" class="hidden mb-6 p-4 rounded-2xl text-center font-bold text-lg bounce-in">
+        <div id="feedback-box" class="hidden mb-6 p-4 rounded-2xl text-center font-bold text-base sm:text-lg bounce-in">
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex flex-wrap justify-center gap-4">
-            <button id="check-btn" onclick="checkAnswers()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg py-3 px-8 rounded-2xl shadow-lg shadow-emerald-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+        <div class="flex flex-wrap justify-center gap-3 sm:gap-4">
+            <button id="check-btn" onclick="checkAnswers()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base sm:text-lg py-3 px-7 rounded-2xl shadow-lg shadow-emerald-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
                 <span>✅ 檢查答案</span>
             </button>
-            <button id="next-btn" onclick="nextLevel()" class="hidden bg-sky-500 hover:bg-sky-600 text-white font-bold text-lg py-3 px-8 rounded-2xl shadow-lg shadow-sky-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+            <button id="reveal-btn" onclick="revealAnswers()" class="hidden bg-amber-500 hover:bg-amber-600 text-white font-bold text-base sm:text-lg py-3 px-6 rounded-2xl shadow-lg shadow-amber-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+                <span>💡 顯示正確答案</span>
+            </button>
+            <button id="next-btn" onclick="nextLevel()" class="hidden bg-sky-500 hover:bg-sky-600 text-white font-bold text-base sm:text-lg py-3 px-7 rounded-2xl shadow-lg shadow-sky-200 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
                 <span>下一關 ➡️</span>
             </button>
         </div>
     </main>
 
     <!-- Grammar Helper Modal/Card -->
-    <section class="w-full max-w-3xl mt-6 bg-white/90 rounded-3xl p-5 border-2 border-sky-100 shadow-sm">
-        <details class="group">
-            <summary class="font-bold text-sky-800 cursor-pointer flex items-center justify-between list-none">
-                <span class="flex items-center gap-2">📚 小提示：代名詞與所有格對照表 (點擊展開)</span>
-                <span class="transition group-open:rotate-180">▼</span>
+    <section class="w-full max-w-4xl mt-5 bg-white/95 rounded-3xl p-5 border-2 border-sky-100 shadow-sm">
+        <details class="group" open>
+            <summary class="font-bold text-sky-800 cursor-pointer flex items-center justify-between list-none text-base sm:text-lg">
+                <span class="flex items-center gap-2">📚 代名詞與所有格對照小幫手 (點擊展開/收合)</span>
+                <span class="transition group-open:rotate-180 text-sky-500">▼</span>
             </summary>
             <div class="mt-4 overflow-x-auto">
-                <table class="w-full text-sm text-left text-slate-600 border-collapse">
+                <table class="w-full text-sm sm:text-base text-left text-slate-600 border-collapse">
                     <thead class="bg-sky-100 text-sky-900">
                         <tr>
-                            <th class="p-2 rounded-tl-lg">人稱</th>
-                            <th class="p-2">主格 (誰做動作)</th>
-                            <th class="p-2 rounded-tr-lg">所有格 (誰的東西)</th>
+                            <th class="p-2.5 rounded-tl-xl">中文意思</th>
+                            <th class="p-2.5">主格 Pronoun<br><span class="text-xs font-normal text-sky-700">(放在動詞前面，表示「誰」)</span></th>
+                            <th class="p-2.5 rounded-tr-xl">所有格 Possessive Adjective<br><span class="text-xs font-normal text-sky-700">(放在名詞前面，表示「誰的」)</span></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        <tr><td class="p-2 font-medium">我</td><td class="p-2 font-bold text-sky-600">I</td><td class="p-2 font-bold text-amber-600">my (我的)</td></tr>
-                        <tr><td class="p-2 font-medium">你 / 你們</td><td class="p-2 font-bold text-sky-600">you</td><td class="p-2 font-bold text-amber-600">your (你的)</td></tr>
-                        <tr><td class="p-2 font-medium">他 (男生)</td><td class="p-2 font-bold text-sky-600">he</td><td class="p-2 font-bold text-amber-600">his (他的)</td></tr>
-                        <tr><td class="p-2 font-medium">她 (女生)</td><td class="p-2 font-bold text-sky-600">she</td><td class="p-2 font-bold text-amber-600">her (她的)</td></tr>
-                        <tr><td class="p-2 font-medium">牠 / 它 (動物/物品)</td><td class="p-2 font-bold text-sky-600">it</td><td class="p-2 font-bold text-amber-600">its (牠的/它的)</td></tr>
-                        <tr><td class="p-2 font-medium">我們</td><td class="p-2 font-bold text-sky-600">we</td><td class="p-2 font-bold text-amber-600">our (我們的)</td></tr>
-                        <tr><td class="p-2 font-medium">他們 / 牠們</td><td class="p-2 font-bold text-sky-600">they</td><td class="p-2 font-bold text-amber-600">their (他們的)</td></tr>
+                        <tr class="hover:bg-sky-50/50"><td class="p-2.5 font-medium">我 / 我的</td><td class="p-2.5 font-bold text-sky-600 text-lg">I</td><td class="p-2.5 font-bold text-amber-600 text-lg">my</td></tr>
+                        <tr class="hover:bg-sky-50/50"><td class="p-2.5 font-medium">你 / 你的</td><td class="p-2.5 font-bold text-sky-600 text-lg">you</td><td class="p-2.5 font-bold text-amber-600 text-lg">your</td></tr>
+                        <tr class="hover:bg-sky-50/50"><td class="p-2.5 font-medium">他 / 他的 (男生)</td><td class="p-2.5 font-bold text-sky-600 text-lg">he</td><td class="p-2.5 font-bold text-amber-600 text-lg">his</td></tr>
+                        <tr class="hover:bg-sky-50/50"><td class="p-2.5 font-medium">她 / 她的 (女生)</td><td class="p-2.5 font-bold text-sky-600 text-lg">she</td><td class="p-2.5 font-bold text-amber-600 text-lg">her</td></tr>
+                        <tr class="hover:bg-sky-50/50"><td class="p-2.5 font-medium">牠 / 牠的 (動物/物品)</td><td class="p-2.5 font-bold text-sky-600 text-lg">it</td><td class="p-2.5 font-bold text-amber-600 text-lg">its</td></tr>
+                        <tr class="hover:bg-sky-50/50"><td class="p-2.5 font-medium">我們 / 我們的</td><td class="p-2.5 font-bold text-sky-600 text-lg">we</td><td class="p-2.5 font-bold text-amber-600 text-lg">our</td></tr>
+                        <tr class="hover:bg-sky-50/50"><td class="p-2.5 font-medium">他們 / 他們的</td><td class="p-2.5 font-bold text-sky-600 text-lg">they</td><td class="p-2.5 font-bold text-amber-600 text-lg">their</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -177,48 +214,105 @@
     </section>
 
     <script>
-        // 題庫資料整理自上傳的 P1 練習卷 (1) 至 (5)
+        // Web Audio API 音效系統（無需外部音檔）
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playTone(freq, type, duration, startTime = 0, gainVal = 0.15) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime + startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + startTime);
+                osc.stop(ctx.currentTime + startTime + duration);
+            } catch (e) {
+                // Ignore audio errors on restricted environments
+            }
+        }
+
+        function playPopSound() {
+            playTone(520, 'sine', 0.08, 0, 0.1);
+        }
+
+        function playWrongSound() {
+            playTone(240, 'triangle', 0.18, 0, 0.15);
+            playTone(190, 'triangle', 0.22, 0.12, 0.15);
+        }
+
+        function playWinSound() {
+            playTone(523.25, 'sine', 0.15, 0, 0.15);     // C5
+            playTone(659.25, 'sine', 0.15, 0.12, 0.15);  // E5
+            playTone(783.99, 'sine', 0.15, 0.24, 0.15);  // G5
+            playTone(1046.50, 'sine', 0.35, 0.36, 0.18); // C6
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+            document.getElementById('sound-text').textContent = soundEnabled ? '音效開' : '靜音';
+            if (soundEnabled) playPopSound();
+        }
+
+        // 完整 15 個關卡題庫資料（對應練習 1-5 及 練習 6-10）
         const levels = [
+            // --- 第一部分：原練習 1-5（共 8 關）---
             {
-                title: "第 1 關：我的家人與玩具",
-                words: ["My", "his", "her", "our", "your", "Their"],
+                title: "關卡 1（練習 1A）：My family & toys",
+                words: ["My", "my", "his", "His", "Her", "Our", "your", "Their"],
                 segments: [
                     "1. I have two sisters and a brother. ", { ans: "My" }, " sisters are pretty. They are six.<br><br>",
                     "2. Frank is ", { ans: "my" }, " brother. He likes dogs. Look! ", { ans: "His" }, " dog is small.<br><br>",
-                    "3. We have a lot of toys at home. Look! ", { ans: "Our" }, " toys are in the big box. My sister's name is Coco. She has long hair. ", { ans: "Her" }, " favourite toy is a doll."
+                    "3. We have a lot of toys at home. Look! ", { ans: "Our" }, " toys are in the big box. My favourite toy is a doll. ", { ans: "Her" }, " name is Coco. She has long hair."
                 ]
             },
             {
-                title: "第 2 關：給 Mary 的生日回信",
-                words: ["his", "You", "They", "He", "She", "It", "My"],
+                title: "關卡 2（練習 1B）：Billy's Letter to Mary",
+                words: ["you", "It", "He", "His", "My", "She", "They"],
                 segments: [
                     "Hi Mary,<br>",
                     "How are ", { ans: "you" }, "? Thank you for the birthday card. ", { ans: "It" }, " is very beautiful. Today is my brother's birthday. ", { ans: "He" }, " is five years old. ", { ans: "His" }, " friend gives him many presents. He is playing with them now. ", { ans: "My" }, " mum is very busy. ", { ans: "She" }, " is making a birthday cake. Write soon!<br>",
-                    "Best wishes,<br>Billy."
+                    "Best wishes, Billy."
                 ]
             },
             {
-                title: "第 3 關：Amy 的同學與寵物",
-                words: ["his", "my", "her", "your", "our", "their"],
+                title: "關卡 3（練習 2A）：Amy's Family & Teacher",
+                words: ["My", "Our", "His", "Her", "Their", "your"],
                 segments: [
                     { ans: "My" }, " name is Amy. I am tall and thin. Sue is my classmate. We are in Class 1A. We are very tall. ", { ans: "Our" }, " legs are long.<br><br>",
                     "I have a little brother. ", { ans: "His" }, " name is Benny. ", { ans: "His" }, " T-shirt is blue.<br><br>",
-                    "This is Miss Lam. She is my English teacher. ", { ans: "Her" }, " blouse is purple. ", { ans: "Her" }, " mouth is small.<br><br>",
+                    "This is Miss Lam. She is my English teacher. ", { ans: "Her" }, " mouth is small. Her blouse is purple.<br><br>",
                     "These are my turtles. They are green. ", { ans: "Their" }, " tails are short."
                 ]
             },
             {
-                title: "第 4 關：Kitty 的文具盒",
-                words: ["my", "her", "his", "their", "our", "your"],
+                title: "關卡 4（練習 2B）：Kitty's Stationery",
+                words: ["my", "Her", "her", "his", "their", "our", "your"],
                 segments: [
                     "Hello! My name is Kitty. I have a lot of stationery. I put it in ", { ans: "my" }, " pencil box. I like ", { ans: "my" }, " ruler. It is long and brown.<br><br>",
                     "My best friend, Mary, has a pen. ", { ans: "Her" }, " pen is blue. She puts it on ", { ans: "her" }, " desk. Paul's father gives Paul a pencil sharpener. He loves ", { ans: "his" }, " pencil sharpener. There are some yellow stars on it.<br><br>",
-                    "My group leader, Jenny, has a pencil case. She cleans ", { ans: "her" }, " pencil case every day. My classmates love ", { ans: "their" }, " stationery. We all love ", { ans: "our" }, " stationery. How about you? Do you love ", { ans: "your" }, " own things?"
+                    "My group leader, Jenny, has a pencil case. She cleans ", { ans: "her" }, " pencil case every day. My classmates love ", { ans: "their" }, " stationery. We take care of ", { ans: "our" }, " things. How about you? Do you love ", { ans: "your" }, " own stationery?"
                 ]
             },
             {
-                title: "第 5 關：Jamie 喜愛的人和事物",
-                words: ["its", "his", "her", "our", "their"],
+                title: "關卡 5（練習 3A）：Jamie's People & Pets",
+                words: ["Her", "Our", "His", "Their", "its"],
                 segments: [
                     "Good morning! My name is Jamie. Today I want to talk about the people and things I love.<br><br>",
                     "This is Miss Lam. She is my English teacher. ", { ans: "Her" }, " mouth is small. ", { ans: "Her" }, " shirt is white.<br><br>",
@@ -228,40 +322,158 @@
                 ]
             },
             {
-                title: "第 6 關：Kate 的學校與寵物",
-                words: ["my", "his", "her", "our", "their", "your"],
+                title: "關卡 6（練習 3B）：Kate Chow's Family",
+                words: ["My", "His", "Her", "Our", "Their", "your"],
                 segments: [
                     "I am Kate Chow. ", { ans: "My" }, " mum and dad are teachers. They are nice. I have a brother. ", { ans: "His" }, " name is Rex. I have a sister, Olivia. ", { ans: "Her" }, " eyes are big and bright. Rex, Olivia and I go to the same school. ", { ans: "Our" }, " school is on Ma Wan.<br><br>",
                     "We love pets. We have a dog, a turtle and a hamster at home. They are lovely. They often play with toys. ", { ans: "Their" }, " toys are colourful."
                 ]
             },
             {
-                title: "第 7 關：探望爺爺",
-                words: ["he", "she", "we", "they", "his", "her", "our", "their"],
+                title: "關卡 7（練習 4）：Visiting Grandpa",
+                words: ["our", "They", "his", "her", "He", "Their", "She", "We"],
                 segments: [
                     "We live in Sham Shui Po but ", { ans: "our" }, " mum and dad work in Mong Kok. ", { ans: "They" }, " go to work by bus. Today, Dad wears ", { ans: "his" }, " new shoes. Mum wears ", { ans: "her" }, " new skirt too.<br><br>",
                     "In the evening, we go to Grandpa's home. ", { ans: "He" }, " is sixty-five years old today. There are two cats in his garden. ", { ans: "Their" }, " eyes are big. Mum likes cats. ", { ans: "She" }, " is happy to see them. ", { ans: "We" }, " have a good time with Grandpa today!"
                 ]
             },
             {
-                title: "第 8 關：介紹我的家庭",
-                words: ["his", "her", "she", "he", "my", "it", "your"],
+                title: "關卡 8（練習 5）：Ruby's Family Photo",
+                words: ["my", "His", "Her", "She", "It", "your"],
                 segments: [
-                    "This is ", { ans: "my" }, " father. ", { ans: "His" }, " name is George. This is ", { ans: "my" }, " mother. ", { ans: "Her" }, " name is Daisy.<br><br>",
-                    "This is May. She is ", { ans: "my" }, " sister. ", { ans: "She" }, " is four years old. This is ", { ans: "my" }, " grandmother.<br><br>",
-                    "This is Kitty. ", { ans: "It" }, " has a long tail. What about ", { ans: "your" }, " family, Ruby?"
+                    "<div class='flex flex-wrap gap-2 mb-3 text-sm bg-white p-2.5 rounded-xl border border-amber-200 justify-center'>" +
+                    "<span>👨 Father (George)</span> • <span>👩 Mother (Daisy)</span> • <span>👧 Sister (May, 4)</span> • <span>👵 Grandmother</span> • <span>🐱 Cat (Kitty)</span>" +
+                    "</div>",
+                    "This is ", { ans: "my" }, " father. ", { ans: "His" }, " name is George. This is ", { ans: "my" }, " mother. ", { ans: "Her" }, " name is Daisy. This is May. She is ", { ans: "my" }, " sister. ", { ans: "She" }, " is four years old. This is ", { ans: "my" }, " grandmother. This is Kitty. ", { ans: "It" }, " has a long tail. What about ", { ans: "your" }, " family, Ruby?"
+                ]
+            },
+
+            // --- 第二部分：新增練習 6-10（共 7 關）---
+            {
+                title: "關卡 9（練習 6A）：Jenny & Leo",
+                words: ["I", "He", "It", "We", "you", "she", "they"],
+                segments: [
+                    "I am Jenny. ", { ans: "I" }, " am six years old. Leo is my brother. ", { ans: "He" }, " likes football. This is my pet. It is a dog. ", { ans: "It" }, " is fat. Leo and I play in the park. ", { ans: "We" }, " are happy."
+                ]
+            },
+            {
+                title: "關卡 10（練習 6B）：Peach & Mario Dialogue",
+                words: ["you", "I", "He", "She", "They", "We", "it"],
+                segments: [
+                    "<strong>Peach:</strong> Hi, Mario. How are ", { ans: "you" }, "?<br>",
+                    "<strong>Mario:</strong> ", { ans: "I" }, " am fine, thank you.<br>",
+                    "<strong>Peach:</strong> Look, that is Mr Pang. ", { ans: "He" }, " is my English teacher. Who is your English teacher?<br>",
+                    "<strong>Mario:</strong> My English teacher is Miss Wong. ", { ans: "She" }, " is pretty.<br>",
+                    "<strong>Peach:</strong> Mr Pang and Miss Wong are nice. ", { ans: "They" }, " are good teachers.<br>",
+                    "<strong>Mario:</strong> You and I are nice too. ", { ans: "We" }, " are good students.<br>",
+                    "<strong>Peach:</strong> Sure!"
+                ]
+            },
+            {
+                title: "關卡 11（練習 7）：8 Sentences Practice",
+                words: ["Her", "He", "their", "They", "Our", "her", "His", "She", "We"],
+                segments: [
+                    "1. Mary has a doll. ", { ans: "Her" }, " doll is beautiful.<br>",
+                    "2. Grandpa is tall. ", { ans: "He" }, " is strong too.<br>",
+                    "3. Mary and Tom like ", { ans: "their" }, " T-shirts. ", { ans: "They" }, " are blue.<br>",
+                    "4. Joe and I are in Class 1A. ", { ans: "Our" }, " class teacher is Mr Chan.<br>",
+                    "5. Lily has a dress. She likes ", { ans: "her" }, " dress.<br>",
+                    "6. The baby boy is cute. ", { ans: "His" }, " eyes are big.<br>",
+                    "7. Mum has a new blouse. ", { ans: "She" }, " is wearing it today.<br>",
+                    "8. Ben and I are good friends. ", { ans: "We" }, " go to the same school."
+                ]
+            },
+            {
+                title: "關卡 12（練習 8）：Sam & Ben Dialogue",
+                words: ["you", "I", "am", "She", "We", "He", "They", "It"],
+                segments: [
+                    "<strong>Sam:</strong> Hello! How are ", { ans: "you" }, "?<br>",
+                    "<strong>Ben:</strong> ", { ans: "I" }, " am fine, thank you.<br>",
+                    "<strong>Sam:</strong> My name is Sam. What is your name?<br>",
+                    "<strong>Ben:</strong> My name is Ben. How old are ", { ans: "you" }, "?<br>",
+                    "<strong>Sam:</strong> I ", { ans: "am" }, " seven years old.<br>",
+                    "<strong>Ben:</strong> This is May. ", { ans: "She" }, " is my classmate. ", { ans: "We" }, " are in Class 2A.<br>",
+                    "<strong>Sam:</strong> This is Simon. ", { ans: "He" }, " is my friend. ", { ans: "He" }, " is a monitor. Susan and Karen are sisters. ", { ans: "They" }, " are my friends too.<br>",
+                    "<strong>Ben:</strong> That is my cat. ", { ans: "It" }, " is fat."
+                ]
+            },
+            {
+                title: "關卡 13（練習 9A）：6 Sentences Practice",
+                words: ["She", "I", "We", "He", "It", "They"],
+                segments: [
+                    "1. This is Miss Chan. ", { ans: "She" }, " is my class teacher.<br>",
+                    "2. My name is Mike. ", { ans: "I" }, " am six years old.<br>",
+                    "3. Kitty is my classmate. ", { ans: "We" }, " are in Class 1B.<br>",
+                    "4. This is David. ", { ans: "He" }, " is my friend.<br>",
+                    "5. I like this rabbit. ", { ans: "It" }, " is small.<br>",
+                    "6. These are my dogs. ", { ans: "They" }, " are thin."
+                ]
+            },
+            {
+                title: "關卡 14（練習 9B）：My Best Friend Sally",
+                words: ["I", "We", "His", "He", "They", "She", "It", "their", "her"],
+                segments: [
+                    "I want to talk about (e.g.) my best friend, Sally. Sally and ", { ans: "I" }, " are in the same class. ", { ans: "We" }, " are in Class 1G. Sally is six years old. She has a younger brother. ", { ans: "His" }, " name is Sam. ", { ans: "He" }, " is five years old. They live in Kowloon. ", { ans: "They" }, " live near us. Sally is very kind and helpful. ", { ans: "She" }, " gives me a storybook on my birthday. ", { ans: "It" }, " is very interesting. The story is about three little pigs and a wolf. The little pigs are very smart. They protect ", { ans: "their" }, " home from the wolf."
+                ]
+            },
+            {
+                title: "關卡 15（練習 10）：5 Sentences Practice",
+                words: ["you", "He", "They", "She", "We", "it"],
+                tip: "💡 第 4 題小提示：女老師（Miss Wong）＋ is 動詞，主格要用 She 喔！",
+                segments: [
+                    "1. You have two pencils. Can ", { ans: "you" }, " give me a pencil?<br>",
+                    "2. Grandpa has white hair. ", { ans: "He" }, " is old.<br>",
+                    "3. The rabbits like hopping. ", { ans: "They" }, " like to hop in the grass.<br>",
+                    "4. Miss Wong has two big eyes. ", { ans: "She" }, " is beautiful.<br>",
+                    "5. Mum and I have some cookies for tea. ", { ans: "We" }, " love them very much."
                 ]
             }
         ];
 
+        const STORAGE_KEY = 'p1_pronoun_game_completed_v2';
         let currentLevelIdx = 0;
         let selectedSlotIdx = 0;
         let userAnswers = []; // Stores { word: string, isCorrect: boolean | null }
         let completedLevels = new Set();
-        let totalScore = 0;
+
+        function loadProgress() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const arr = JSON.parse(saved);
+                    if (Array.isArray(arr)) {
+                        completedLevels = new Set(arr);
+                    }
+                }
+            } catch (e) {
+                completedLevels = new Set();
+            }
+            updateStarsDisplay();
+        }
+
+        function saveProgress() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify([...completedLevels]));
+            } catch (e) {
+                // Ignore storage quota errors
+            }
+            updateStarsDisplay();
+        }
+
+        function updateStarsDisplay() {
+            document.getElementById('stars-count').textContent = completedLevels.size;
+        }
+
+        function resetAllProgress() {
+            completedLevels.clear();
+            saveProgress();
+            loadLevel(0);
+            showFeedback("🔄 已清除所有過關星星紀錄，從第 1 關重新開始！", "bg-sky-100 text-sky-800 border-2 border-sky-300");
+        }
 
         // Initialize Game
         function init() {
+            loadProgress();
             renderLevelTabs();
             loadLevel(0);
         }
@@ -274,9 +486,9 @@
                 const isCompleted = completedLevels.has(idx);
                 const isCurrent = idx === currentLevelIdx;
                 
-                let baseClass = "px-3 py-1.5 rounded-xl font-bold text-sm transition flex items-center gap-1 ";
+                let baseClass = "px-2.5 sm:px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-1 ";
                 if (isCurrent) {
-                    baseClass += "bg-sky-500 text-white shadow-md scale-105";
+                    baseClass += "bg-sky-500 text-white shadow-md scale-105 ring-2 ring-sky-300";
                 } else if (isCompleted) {
                     baseClass += "bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200";
                 } else {
@@ -284,8 +496,12 @@
                 }
                 
                 btn.className = baseClass;
-                btn.innerHTML = `${isCompleted ? '✅' : ''} 關卡 ${idx + 1}`;
-                btn.onclick = () => loadLevel(idx);
+                btn.innerHTML = `${isCompleted ? '⭐' : ''} ${idx + 1}`;
+                btn.title = lvl.title;
+                btn.onclick = () => {
+                    playPopSound();
+                    loadLevel(idx);
+                };
                 tabsContainer.appendChild(btn);
             });
         }
@@ -295,9 +511,20 @@
             const level = levels[idx];
             
             document.getElementById('level-indicator').textContent = idx + 1;
+            document.getElementById('level-title').textContent = level.title;
             document.getElementById('feedback-box').classList.add('hidden');
             document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('reveal-btn').classList.add('hidden');
             document.getElementById('check-btn').classList.remove('hidden');
+
+            // Level special tip
+            const tipBox = document.getElementById('level-tip-box');
+            if (level.tip) {
+                tipBox.textContent = level.tip;
+                tipBox.classList.remove('hidden');
+            } else {
+                tipBox.classList.add('hidden');
+            }
 
             // Count blanks and reset userAnswers
             const blanks = level.segments.filter(seg => typeof seg === 'object');
@@ -312,9 +539,20 @@
         function renderWordBank(words) {
             const bank = document.getElementById('word-bank');
             bank.innerHTML = '';
-            words.forEach(word => {
+            // Deduplicate display chips by lowercase while preserving clean casing for P1 readability
+            const seen = new Set();
+            const displayWords = [];
+            words.forEach(w => {
+                const key = w.toLowerCase();
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    displayWords.push(w === 'i' ? 'I' : w.toLowerCase());
+                }
+            });
+
+            displayWords.forEach(word => {
                 const chip = document.createElement('button');
-                chip.className = "word-chip bg-white hover:bg-amber-100 text-sky-900 font-bold text-lg px-5 py-2 rounded-2xl border-2 border-sky-200 shadow-sm hover:border-amber-400 cursor-pointer";
+                chip.className = "word-chip bg-white hover:bg-amber-100 text-sky-900 font-bold text-lg sm:text-xl px-4 sm:px-5 py-2 rounded-2xl border-2 border-sky-200 shadow-sm hover:border-amber-400 cursor-pointer";
                 chip.textContent = word;
                 chip.onclick = () => fillActiveSlot(word);
                 bank.appendChild(chip);
@@ -347,11 +585,59 @@
                     }
 
                     slot.className = slotClass;
-                    slot.textContent = ansObj.word || `(${currentBlankIdx + 1})`;
-                    if (!ansObj.word) {
-                        slot.classList.add('text-slate-400', 'font-normal', 'text-sm');
+
+                    if (ansObj.isCorrect === true) {
+                        slot.innerHTML = `<span>${ansObj.word}</span><span class="ml-1 text-xs">✓</span>`;
+                    } else {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = ansObj.word;
+                        input.placeholder = `(${currentBlankIdx + 1})`;
+                        input.setAttribute('aria-label', `第 ${currentBlankIdx + 1} 格`);
+                        input.autocomplete = 'off';
+                        input.spellcheck = false;
+
+                        input.onfocus = () => {
+                            if (selectedSlotIdx !== currentBlankIdx) {
+                                selectedSlotIdx = currentBlankIdx;
+                                updateSlotHighlightOnly();
+                            }
+                        };
+
+                        input.onclick = (e) => {
+                            e.stopPropagation();
+                            // 如果已經有填字且目前正被選中，再次點擊可清除重選
+                            if (selectedSlotIdx === currentBlankIdx && ansObj.word !== '') {
+                                playPopSound();
+                                userAnswers[currentBlankIdx].word = '';
+                                userAnswers[currentBlankIdx].isCorrect = null;
+                                input.value = '';
+                                slot.classList.remove('wrong');
+                            } else {
+                                selectedSlotIdx = currentBlankIdx;
+                                userAnswers[currentBlankIdx].isCorrect = null;
+                                slot.classList.remove('wrong');
+                                updateSlotHighlightOnly();
+                            }
+                        };
+
+                        input.oninput = (e) => {
+                            const rawVal = e.target.value;
+                            userAnswers[currentBlankIdx].word = rawVal;
+                            userAnswers[currentBlankIdx].isCorrect = null;
+                            slot.classList.remove('wrong');
+                        };
+
+                        input.onkeydown = (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                checkAnswers();
+                            }
+                        };
+
+                        slot.appendChild(input);
                     }
-                    
+
                     slot.onclick = () => selectSlot(currentBlankIdx);
                     container.appendChild(slot);
                     blankCounter++;
@@ -359,21 +645,38 @@
             });
         }
 
+        function updateSlotHighlightOnly() {
+            const slots = document.querySelectorAll('#passage-container .blank-slot');
+            slots.forEach((el, i) => {
+                if (userAnswers[i] && userAnswers[i].isCorrect !== true) {
+                    if (i === selectedSlotIdx) {
+                        el.classList.add('active');
+                    } else {
+                        el.classList.remove('active');
+                    }
+                }
+            });
+        }
+
         function selectSlot(idx) {
-            // If already verified correct, don't allow changing unless reset
             if (userAnswers[idx].isCorrect === true) return;
+            playPopSound();
             
-            selectedSlotIdx = idx;
-            // Clear wrong state when re-selecting to edit
-            if (userAnswers[idx].isCorrect === false) {
+            // 點擊已填入的空格可清除重選
+            if (userAnswers[idx].word !== '') {
+                userAnswers[idx].word = '';
                 userAnswers[idx].isCorrect = null;
             }
+            selectedSlotIdx = idx;
             renderPassage(levels[currentLevelIdx].segments);
         }
 
-        // Helper to match capitalization (capitalize if at start of sentence)
+        // 自動判斷大小寫（句首或 "I" 自動大寫）
         function formatCase(word, blankIdx, segments) {
-            // Find position of this blank in segments
+            const clean = word.trim();
+            if (!clean) return '';
+            if (clean.toLowerCase() === 'i') return 'I';
+
             let bCount = 0;
             let segIndex = -1;
             for (let i = 0; i < segments.length; i++) {
@@ -386,52 +689,47 @@
                 }
             }
 
-            // Check if it's the very first element
             if (segIndex === 0) {
-                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
             }
 
-            // Check preceding text
             const prevText = segments[segIndex - 1];
             if (typeof prevText === 'string') {
-                const trimmed = prevText.replace(/<br\s*\/?>/gi, '\n').trim();
-                // If preceded by ., !, ?, or newline, or starts with a number like "1."
-                if (trimmed === '' || /[.!?]$/.test(trimmed) || prevText.endsWith('<br>')) {
-                    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                const stripped = prevText.replace(/<[^>]*>/g, ' ').trim();
+                // 句號、問號、驚嘆號、對話冒號後，或上一元素為標題區塊
+                if (stripped === '' || /[.!?:]$/.test(stripped) || prevText.endsWith('<br>')) {
+                    return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
                 }
             }
 
-            // Otherwise keep lowercase (except "I" if ever used, though not in word banks)
-            return word.toLowerCase();
+            return clean.toLowerCase();
         }
 
         function fillActiveSlot(word) {
             if (selectedSlotIdx === null || selectedSlotIdx >= userAnswers.length) return;
             if (userAnswers[selectedSlotIdx].isCorrect === true) {
-                // Find next available slot
                 const nextEmpty = userAnswers.findIndex(a => a.isCorrect !== true);
                 if (nextEmpty !== -1) selectedSlotIdx = nextEmpty;
                 else return;
             }
 
+            playPopSound();
             const formattedWord = formatCase(word, selectedSlotIdx, levels[currentLevelIdx].segments);
             userAnswers[selectedSlotIdx].word = formattedWord;
             userAnswers[selectedSlotIdx].isCorrect = null;
 
-            // Auto-advance to next unfilled or incorrect slot
+            // 自動跳至下一個未填寫的空格
             let nextIdx = -1;
             for (let i = selectedSlotIdx + 1; i < userAnswers.length; i++) {
-                if (userAnswers[i].isCorrect !== true && userAnswers[i].word === '') {
+                if (userAnswers[i].isCorrect !== true && userAnswers[i].word.trim() === '') {
                     nextIdx = i;
                     break;
                 }
             }
             if (nextIdx === -1) {
-                // Wrap around to find any empty slot
-                nextIdx = userAnswers.findIndex(a => a.word === '');
+                nextIdx = userAnswers.findIndex(a => a.word.trim() === '');
             }
             if (nextIdx === -1) {
-                // If all filled, move to next non-correct slot
                 for (let i = selectedSlotIdx + 1; i < userAnswers.length; i++) {
                     if (userAnswers[i].isCorrect !== true) {
                         nextIdx = i;
@@ -451,68 +749,83 @@
             const level = levels[currentLevelIdx];
             const blanks = level.segments.filter(seg => typeof seg === 'object');
             
-            // Check if any blank is empty
-            const hasEmpty = userAnswers.some(a => a.word === '');
+            const hasEmpty = userAnswers.some(a => a.word.trim() === '');
             if (hasEmpty) {
-                showFeedback("⚠️ 還有空格未填寫喔！請填滿所有空格再檢查。", "bg-amber-100 text-amber-800 border-2 border-amber-300");
-                // Select first empty slot
-                selectedSlotIdx = userAnswers.findIndex(a => a.word === '');
+                playWrongSound();
+                showFeedback("⚠️ 還有空格未填寫喔！請填滿所有空格再按「檢查答案」。", "bg-amber-100 text-amber-800 border-2 border-amber-300");
+                selectedSlotIdx = userAnswers.findIndex(a => a.word.trim() === '');
                 renderPassage(level.segments);
                 return;
             }
 
             let allCorrect = true;
-            let newlyCorrectCount = 0;
 
             blanks.forEach((blank, idx) => {
                 const userWord = userAnswers[idx].word.trim().toLowerCase();
                 const correctWord = blank.ans.trim().toLowerCase();
                 
                 if (userWord === correctWord) {
-                    if (userAnswers[idx].isCorrect !== true) {
-                        newlyCorrectCount++;
-                    }
                     userAnswers[idx].isCorrect = true;
-                    // Ensure exact expected capitalization on correct answer
+                    // 自動套用標準大小寫
                     userAnswers[idx].word = blank.ans;
                 } else {
                     userAnswers[idx].isCorrect = false;
+                    // 即使答錯也幫忙修正句首大寫顯示，避免小朋友困惑
+                    userAnswers[idx].word = formatCase(userAnswers[idx].word, idx, level.segments);
                     allCorrect = false;
                 }
             });
 
-            if (newlyCorrectCount > 0) {
-                totalScore += newlyCorrectCount * 10;
-                document.getElementById('score-display').textContent = totalScore;
-            }
-
             renderPassage(level.segments);
 
             if (allCorrect) {
+                playWinSound();
                 completedLevels.add(currentLevelIdx);
+                saveProgress();
                 renderLevelTabs();
                 document.getElementById('check-btn').classList.add('hidden');
+                document.getElementById('reveal-btn').classList.add('hidden');
                 
                 if (currentLevelIdx < levels.length - 1) {
-                    showFeedback("🎉 太棒了！全部答對！準備好挑戰下一關了嗎？", "bg-emerald-100 text-emerald-800 border-2 border-emerald-300");
+                    showFeedback("🎉 太棒了！全部答對獲得一顆星星！準備好挑戰下一關了嗎？", "bg-emerald-100 text-emerald-800 border-2 border-emerald-300");
                     document.getElementById('next-btn').classList.remove('hidden');
                 } else {
-                    showFeedback("🏆 恭喜你完成所有 8 個關卡！你是英文代名詞小達人！", "bg-purple-100 text-purple-800 border-2 border-purple-300");
+                    showFeedback("🏆 恭喜你完成全部 15 個關卡！你是英文代名詞小達人！", "bg-purple-100 text-purple-800 border-2 border-purple-300");
                 }
             } else {
-                // Select first wrong slot so user can easily fix it
+                playWrongSound();
                 selectedSlotIdx = userAnswers.findIndex(a => a.isCorrect === false);
                 renderPassage(level.segments);
-                showFeedback("💪 加油！紅色框框的答案不太對，點選紅色空格再試一次吧！", "bg-rose-100 text-rose-800 border-2 border-rose-300");
+                document.getElementById('reveal-btn').classList.remove('hidden');
+                showFeedback("💪 加油！紅色框框的答案不太對，點選紅色空格清除重試，或按「顯示正確答案」！", "bg-rose-100 text-rose-800 border-2 border-rose-300");
             }
         }
 
+        function revealAnswers() {
+            playPopSound();
+            const level = levels[currentLevelIdx];
+            const blanks = level.segments.filter(seg => typeof seg === 'object');
+            blanks.forEach((blank, idx) => {
+                userAnswers[idx].word = blank.ans;
+                userAnswers[idx].isCorrect = true;
+            });
+            renderPassage(level.segments);
+            document.getElementById('check-btn').classList.add('hidden');
+            document.getElementById('reveal-btn').classList.add('hidden');
+            if (currentLevelIdx < levels.length - 1) {
+                document.getElementById('next-btn').classList.remove('hidden');
+            }
+            showFeedback("💡 已顯示所有正確答案！記住用法後，可以按「重新開始」自己再挑戰一次喔！", "bg-sky-100 text-sky-800 border-2 border-sky-300");
+        }
+
         function resetCurrentLevel() {
+            playPopSound();
             loadLevel(currentLevelIdx);
         }
 
         function nextLevel() {
             if (currentLevelIdx < levels.length - 1) {
+                playPopSound();
                 loadLevel(currentLevelIdx + 1);
             }
         }
@@ -520,7 +833,7 @@
         function showFeedback(msg, classes) {
             const box = document.getElementById('feedback-box');
             box.textContent = msg;
-            box.className = `mb-6 p-4 rounded-2xl text-center font-bold text-lg bounce-in ${classes}`;
+            box.className = `mb-6 p-4 rounded-2xl text-center font-bold text-base sm:text-lg bounce-in ${classes}`;
             box.classList.remove('hidden');
         }
 
